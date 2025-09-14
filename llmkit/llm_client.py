@@ -43,9 +43,9 @@ class BaseClient:
         
         # 执行重试逻辑
         max_retries = 5
-        retry_count = 0
+        api_retry_count = 0
         
-        while retry_count < max_retries:
+        while api_retry_count < max_retries:
             try:
                 # 创建聊天完成请求
                 response = self._create_chat_completion(messages)
@@ -60,12 +60,12 @@ class BaseClient:
             except Exception as e:
                 # 处理异常和重试逻辑
                 should_retry, messages = self.retry_handler.handle_exception(
-                    e, retry_count, max_retries, messages, request_data,
+                    e, api_retry_count, messages, request_data,
                     self.platform, self.model_name
                 )
                 
                 if should_retry:
-                    retry_count += 1
+                    api_retry_count += 1
                     continue
                 else:
                     raise

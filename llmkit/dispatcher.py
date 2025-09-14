@@ -23,9 +23,9 @@ def send_with_fallback(
         validate_func: 结果验证函数
         
     Returns:
-        (返回消息, token总数, 重试次数)
+        (返回消息, token总数, 模型切换次数)
     """
-    retry_count = 0
+    model_switch_count = 0
     models_num = len(llm_models)
 
     for idx, model_info in enumerate(llm_models):
@@ -39,16 +39,16 @@ def send_with_fallback(
             if validate_func is not None and not validate_func(return_message):
                 print(base_model_info)
                 print("输出结果：条件校验失败, trying next model ...")
-                retry_count += 1
+                model_switch_count += 1
                 continue
                 
-            return return_message, total_tokens, retry_count
+            return return_message, total_tokens, model_switch_count
             
         except Exception as e:
             print(base_model_info)
             if idx < models_num - 1:
                 print("model failed, trying next model ...")
-                retry_count += 1
+                model_switch_count += 1
                 continue
             else:
                 raise e
