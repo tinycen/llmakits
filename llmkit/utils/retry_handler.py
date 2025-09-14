@@ -3,7 +3,7 @@
 负责处理API请求的重试逻辑、错误处理和异常恢复
 """
 import time
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, Tuple, Any, Optional
 
 # 默认的重试关键词列表
 DEFAULT_RETRY_KEYWORDS = [
@@ -14,11 +14,6 @@ DEFAULT_RETRY_KEYWORDS = [
     "Requests rate limit exceeded, please try again later",
     "Failed to download multimodal content"
 ]
-
-# 延迟导入以避免循环依赖
-def get_prepare_messages():
-    from llmkit.message import prepare_messages
-    return prepare_messages
 
 
 class RetryHandler:
@@ -44,7 +39,7 @@ class RetryHandler:
                 "include_img": message_info.get("include_img", False),
                 "img_list": message_info.get("img_list", [])
             })
-            prepare_messages = get_prepare_messages()
+            from llmkit.message import prepare_messages
             messages = prepare_messages(
                 self.platform, 
                 message_config["system_prompt"], 
@@ -80,32 +75,6 @@ class RetryHandler:
         image_errors = ["输入图片数量超过限制", "图片输入格式/解析错误"]
         return (any(error in error_message for error in image_errors) 
                 and message_config["include_img"])
-    
-    def _rebuild_messages_with_single_image(self, message_config: Dict) -> Any:
-        """重新构造messages，只使用第一张图片
-        
-        参数:
-            message_config: 消息配置数据字典
-            
-        返回:
-            Any: 更新后的messages对象
-        """
-        img_list = message_config["img_list"]
-        if len(img_list) == 1:
-            print("异常：图片数量 = 1，未超出限制")
-            print(f"img_list : {img_list}")
-            raise Exception("异常：图片数量 = 1，未超出限制")
-
-        # 重新构造messages，只使用第一张图片
-        prepare_messages = get_prepare_messages()
-        messages = prepare_messages(
-            self.platform, 
-            message_config["system_prompt"], 
-            message_config["user_text"], 
-            message_config["include_img"],
-            [img_list[0]]
-        )
-        return messages
 
     def handle_rate_limit_error(self, error_message: str, api_retry_count: int, 
                                messages: Any, message_config: Dict) -> Tuple[bool, Any]:
@@ -123,13 +92,16 @@ class RetryHandler:
         print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
         # 如果图片：下载或读取 出现问题
         if "Failed to download multimodal content" in error_message and message_config["include_img"]:
+            from llmkit.message import rebuild_messages_single_image
             img_list = message_config["img_list"]
-            if len(img_list) == 1:
-                print("异常：图片数量 = 1，仍报异常：下载失败")
-                print(f"img_list : {img_list}")
-                raise Exception("异常：图片数量 = 1，下载失败")
             
-            messages = self._rebuild_messages_with_single_image(message_config)
+            messages = rebuild_messages_single_image(
+                self.platform, 
+                message_config["system_prompt"], 
+                message_config["user_text"], 
+                message_config["include_img"],
+                img_list
+            )
         else:
             time.sleep(10 * (api_retry_count + 1))  # 等待一段时间后重试
         
@@ -145,9 +117,17 @@ class RetryHandler:
         返回:
             Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
         """
+        from llmkit.message import rebuild_messages_single_image
+        
         print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
         
-        messages = self._rebuild_messages_with_single_image(message_config)
+        messages = rebuild_messages_single_image(
+            self.platform, 
+            message_config["system_prompt"], 
+            message_config["user_text"], 
+            message_config["include_img"],
+            message_config["img_list"]
+        )
         
         return True, messages
     
