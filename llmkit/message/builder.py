@@ -28,12 +28,9 @@ def prepare_messages(
         格式化后的消息列表
     """
     if img_list is None:
+        if include_img :
+            raise ValueError("包含图片的消息，图片 img_list 不能为空。")
         img_list = []
-    
-    # 参数验证
-    if not isinstance(img_list, list):
-        print(f"img_list: {img_list}")
-        raise ValueError("img_list 必须为 list 列表。")
     
     if include_img and len(img_list) < 1:
         raise ValueError("包含图片的消息，图片 img_list 不能为空。")
@@ -70,11 +67,9 @@ def rebuild_messages_single_image(
         格式化后的消息列表（只包含第一张图片）
     """
     if img_list is None:
-        if include_img :
-            raise ValueError("包含图片的消息，图片 img_list 不能为空。")
         img_list = []
     
-    if len(img_list) == 1 :
+    if len(img_list) == 1 and include_img :
         print("异常：图片数量 未超出限制")
         print(f"img_list : {img_list}")
         raise Exception("异常：图片数量 == 1，未超出限制")
