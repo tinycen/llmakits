@@ -5,41 +5,10 @@ from typing import Optional, Union
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
-from llmkit.message import convert_to_json, prepare_messages
+from llmkit.message import prepare_messages
 from llm_utils.args import default_api_keys
 
 from funcguard.core import timeout_handler
-
-
-# 发送消息
-def send_message(message_info, llm_models, format_json=False, validate_func=None):
-    retry_count = 0
-    models_num = len(llm_models)
-
-    for idx, model_info in enumerate(llm_models):
-        base_model_info = f"{idx+1}/{models_num} Model {model_info['sdk_name']} : {model_info.get('model_name', 'unknown_model')}"
-        try:
-            return_message, total_tokens = model_info["model"].send_message([], message_info)
-            if format_json:
-                return_message = convert_to_json(return_message)
-            # 新增：如果有校验函数，校验不通过则继续下一个模型
-            if validate_func is not None and not validate_func(return_message):
-                print(base_model_info)
-                print("输出结果：条件校验失败, trying next model ...")
-                retry_count += 1
-                continue
-            return return_message, total_tokens, retry_count
-        except Exception as e:
-            print(base_model_info)
-            if idx < models_num - 1:
-                print("model failed, trying next model ...")
-                retry_count += 1
-                continue
-            else:
-                raise e  # 如果所有模型都失败则抛出异常
-
-    # 如果所有模型都失败
-    raise Exception("All models failed to send message.")
 
 
 # 定义基类
@@ -101,7 +70,7 @@ class BaseClient:
                     temperature=self.temperature,
                     top_p=self.top_p,
                     stream=self.stream,
-                    **self.extra_body  # 获取特定的额外参数
+                    **self.extra_body  # 传递额外的参数
                 )
 
                 if self.stream:
