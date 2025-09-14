@@ -1,5 +1,5 @@
 from filekits.base_io.load import load_yaml
-from llmkit.llm_hub import BaseOpenai
+from llmkit.llm_client import BaseOpenai
 
 
 def load_models(yaml_path):

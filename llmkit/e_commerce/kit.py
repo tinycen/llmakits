@@ -1,7 +1,7 @@
 from selectSql import extr_cat_tree
 from .tools import shorten_title , contains_chinese
-from llm_hub import send_message
-from ..utils.message_format import extract_field
+from llm_client import send_message
+from ..message.formatter import extract_field
 
 
 # 检查 输出的属性参数 是否存在
