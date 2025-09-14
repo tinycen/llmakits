@@ -52,17 +52,17 @@ def process_stream_response(response):
 
 
 class BaseClient:
-    def __init__(self, model_name):
+    def __init__(self, platform: str, model_name: str):
         # 初始化模型参数
         self.model = model_name
         self.model_name = model_name
+        self.platform = platform  # 云服务商平台，由子类传入
         self.temperature = 0.4
         self.top_p = 0.1
         self.stream = False  # 是否流式输出，默认为 False，可选为 True
         self.stream_real = False  # 是否真的流式输出
         self.client = None  # 由子类初始化
         self.extra_body = {}  # 额外的参数
-        self.platform = None  # 云服务商平台，由子类初始化
 
         self.retry_keywords = [
             "Download the media resource timed out",
@@ -160,7 +160,7 @@ class BaseClient:
 # 定义 BaseOpenai 类
 class BaseOpenai(BaseClient):
     def __init__(self, platform, api_key="", model_name="", response_format="json"):
-        super().__init__(model_name)
+        super().__init__(platform, model_name)
         api_keys = default_api_keys["Api_keys"]
         default_api_key = api_keys[platform]
 
