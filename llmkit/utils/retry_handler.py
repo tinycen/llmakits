@@ -30,7 +30,7 @@ class RetryHandler:
     
     def prepare_request_data(self, messages: Any, message_info: Optional[Dict]) -> Tuple[Any, Dict]:
         """准备请求数据"""
-        request_data = {
+        message_config = {
             "system_prompt": "",
             "user_text": "",
             "include_img": False,
@@ -38,7 +38,7 @@ class RetryHandler:
         }
         
         if message_info is not None:
-            request_data.update({
+            message_config.update({
                 "system_prompt": message_info["system_prompt"],
                 "user_text": message_info["user_text"],
                 "include_img": message_info.get("include_img", False),
@@ -47,13 +47,13 @@ class RetryHandler:
             prepare_messages = get_prepare_messages()
             messages = prepare_messages(
                 self.platform, 
-                request_data["system_prompt"], 
-                request_data["user_text"], 
-                request_data["include_img"], 
-                request_data["img_list"]
+                message_config["system_prompt"], 
+                message_config["user_text"], 
+                message_config["include_img"], 
+                message_config["img_list"]
             )
         
-        return messages, request_data
+        return messages, message_config
     
     def extract_error_message(self, e: Exception) -> str:
         """提取错误信息"""
@@ -75,61 +75,22 @@ class RetryHandler:
         """判断是否因为限流而重试"""
         return any(keyword in error_message for keyword in self.retry_keywords)
     
-    def should_retry_for_image_error(self, error_message: str, request_data: Dict) -> bool:
+    def should_retry_for_image_error(self, error_message: str, message_config: Dict) -> bool:
         """判断是否因为图片错误而重试"""
         image_errors = ["输入图片数量超过限制", "图片输入格式/解析错误"]
         return (any(error in error_message for error in image_errors) 
-                and request_data["include_img"])
+                and message_config["include_img"])
     
-    def handle_rate_limit_error(self, error_message: str, api_retry_count: int, 
-                               messages: Any, request_data: Dict) -> Tuple[bool, Any]:
-        """处理限流错误
+    def _rebuild_messages_with_single_image(self, message_config: Dict) -> Any:
+        """重新构造messages，只使用第一张图片
         
         参数:
-            error_message: 错误信息字符串
-            api_retry_count: 当前API重试次数（从0开始计数）
-            messages: 请求消息对象
-            request_data: 请求数据字典
+            message_config: 消息配置数据字典
             
         返回:
-            Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
+            Any: 更新后的messages对象
         """
-        print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
-        
-        if "Failed to download multimodal content" in error_message and request_data["include_img"]:
-            img_list = request_data["img_list"]
-            if len(img_list) == 1:
-                print("异常：图片数量 = 1，仍报异常：下载失败")
-                print(f"img_list : {img_list}")
-                raise Exception("异常：图片数量 = 1，下载失败")
-            
-            # 重新构造messages，只使用第一张图片
-            prepare_messages = get_prepare_messages()
-            messages = prepare_messages(
-                self.platform, 
-                request_data["system_prompt"], 
-                request_data["user_text"], 
-                request_data["include_img"],
-                [img_list[0]]
-            )
-        else:
-            time.sleep(10 * (api_retry_count + 1))  # 等待一段时间后重试
-        
-        return True, messages
-    
-    def handle_image_error(self, messages: Any, request_data: Dict) -> Tuple[bool, Any]:
-        """处理图片相关错误
-        
-        参数:
-            messages: 请求消息对象
-            request_data: 请求数据字典
-            
-        返回:
-            Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
-        """
-        print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
-        
-        img_list = request_data["img_list"]
+        img_list = message_config["img_list"]
         if len(img_list) == 1:
             print("异常：图片数量 = 1，未超出限制")
             print(f"img_list : {img_list}")
@@ -139,16 +100,59 @@ class RetryHandler:
         prepare_messages = get_prepare_messages()
         messages = prepare_messages(
             self.platform, 
-            request_data["system_prompt"], 
-            request_data["user_text"], 
-            request_data["include_img"],
+            message_config["system_prompt"], 
+            message_config["user_text"], 
+            message_config["include_img"],
             [img_list[0]]
         )
+        return messages
+
+    def handle_rate_limit_error(self, error_message: str, api_retry_count: int, 
+                               messages: Any, message_config: Dict) -> Tuple[bool, Any]:
+        """处理限流错误
+        
+        参数:
+            error_message: 错误信息字符串
+            api_retry_count: 当前API重试次数（从0开始计数）
+            messages: 请求消息对象
+            message_config: 消息配置数据字典
+            
+        返回:
+            Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
+        """
+        print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
+        # 如果图片：下载或读取 出现问题
+        if "Failed to download multimodal content" in error_message and message_config["include_img"]:
+            img_list = message_config["img_list"]
+            if len(img_list) == 1:
+                print("异常：图片数量 = 1，仍报异常：下载失败")
+                print(f"img_list : {img_list}")
+                raise Exception("异常：图片数量 = 1，下载失败")
+            
+            messages = self._rebuild_messages_with_single_image(message_config)
+        else:
+            time.sleep(10 * (api_retry_count + 1))  # 等待一段时间后重试
+        
+        return True, messages
+    
+    def handle_image_error(self, messages: Any, message_config: Dict) -> Tuple[bool, Any]:
+        """处理图片相关错误
+        
+        参数:
+            messages: 请求消息对象
+            message_config: 消息配置数据字典
+            
+        返回:
+            Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
+        """
+        print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
+        
+        messages = self._rebuild_messages_with_single_image(message_config)
         
         return True, messages
     
     def handle_exception(self, e: Exception, api_retry_count: int, 
-                        messages: Any, request_data: Dict, platform: str, 
+                        messages: Any, message_config: Dict, platform: str, 
                         model_name: str) -> Tuple[bool, Any]:
         """处理异常和重试逻辑
         
@@ -156,7 +160,7 @@ class RetryHandler:
             e: 异常对象
             api_retry_count: 当前API重试次数（从0开始计数）
             messages: 请求消息对象
-            request_data: 请求数据字典
+            message_config: 消息配置数据字典
             platform: 云服务商平台名称
             model_name: 模型名称
             
@@ -172,10 +176,10 @@ class RetryHandler:
         
         # 判断是否应该重试
         if self.should_retry_for_rate_limit(error_message):
-            return self.handle_rate_limit_error(error_message, api_retry_count, messages, request_data)
+            return self.handle_rate_limit_error(error_message, api_retry_count, messages, message_config)
         
-        elif self.should_retry_for_image_error(error_message, request_data):
-            return self.handle_image_error(messages, request_data)
+        elif self.should_retry_for_image_error(error_message, message_config):
+            return self.handle_image_error(messages, message_config)
         
         elif "Request limit exceeded" in error_message:
             print("模型每日请求超过限制.")
