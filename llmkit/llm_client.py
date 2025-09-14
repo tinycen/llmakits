@@ -1,5 +1,6 @@
 import time
 import pandas as pd
+from typing import Optional, Union
 
 from openai import OpenAI
 from zhipuai import ZhipuAI
@@ -60,7 +61,7 @@ class BaseClient:
         self.top_p = 0.1
         self.stream = False  # 是否流式输出，默认为 False，可选为 True
         self.stream_real = False  # 是否真的流式输出
-        self.client = None  # 由子类初始化
+        self.client: Optional[Union[OpenAI, ZhipuAI]] = None  # 由子类初始化
         self.extra_body = {}  # 额外的参数
 
         self.retry_keywords = [
@@ -73,12 +74,20 @@ class BaseClient:
         ]
 
     def send_message(self, messages, message_info=None):
+        system_prompt = ""
+        user_text = ""
+        include_img = False
+        img_list = []
+        
         if message_info is not None:
             system_prompt = message_info["system_prompt"]
             user_text = message_info["user_text"]
             include_img = message_info.get("include_img", False)
             img_list = message_info.get("img_list", [])
             messages = prepare_messages(self.platform, system_prompt, user_text, include_img, img_list)
+
+        if self.client is None:
+            raise RuntimeError("客户端未初始化，请确保子类正确设置了self.client")
 
         total_tokens = 0
         max_retries = 5  # 最大重试次数
@@ -87,7 +96,7 @@ class BaseClient:
         while retry_count < max_retries:
             try:
                 response = self.client.chat.completions.create(
-                    messages=messages,
+                    messages=messages,  # type: ignore
                     model=self.model_name,
                     temperature=self.temperature,
                     top_p=self.top_p,
@@ -111,11 +120,18 @@ class BaseClient:
                 # 打印当前的模型信息
                 print(f"当前 云服务商: {self.platform}，模型: {self.model_name}")
                 print(e)
-                res = e.response.json()
-                error = res.get("error", res.get("errors", ""))
-                # 智谱Ai报错信息 {"error":{"code":"1210","message":"输入图片数量超过限制"}}
-                # error_code = error["code"]
-                error_message = error.get("message", "")
+                
+                # 安全地获取错误信息
+                error_message = str(e)
+                response = getattr(e, 'response', None)
+                if response is not None:
+                    try:
+                        if hasattr(response, 'json'):
+                            res = response.json()
+                            error = res.get("error", res.get("errors", {}))
+                            error_message = error.get("message", str(e))
+                    except (AttributeError, ValueError):
+                        error_message = str(e)
 
                 # 优化后的限流/网络错误判断
                 if any(keyword in error_message for keyword in self.retry_keywords):
@@ -198,6 +214,9 @@ class BaseOpenai(BaseClient):
             self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
     def models_df(self):
+        if self.client is None:
+            raise RuntimeError("客户端未初始化")
+            
         # 获取模型列表
         models_page = self.client.models.list()
 
