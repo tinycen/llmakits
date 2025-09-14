@@ -54,7 +54,6 @@ def process_stream_response(response):
 class BaseClient:
     def __init__(self, platform: str, model_name: str):
         # 初始化模型参数
-        self.model = model_name
         self.model_name = model_name
         self.platform = platform  # 云服务商平台，由子类传入
         self.temperature = 0.4
@@ -89,7 +88,7 @@ class BaseClient:
             try:
                 response = self.client.chat.completions.create(
                     messages=messages,
-                    model=self.model,
+                    model=self.model_name,
                     temperature=self.temperature,
                     top_p=self.top_p,
                     stream=self.stream,
