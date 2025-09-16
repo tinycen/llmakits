@@ -5,7 +5,6 @@ from openai import OpenAI
 from zhipuai import ZhipuAI
 
 from llmkit.utils.retry_handler import RetryHandler, ResponseHandler
-from llm_utils.args import default_api_keys
 
 from funcguard.core import timeout_handler
 
@@ -86,13 +85,12 @@ class BaseClient:
 
 # 定义 BaseOpenai 类
 class BaseOpenai(BaseClient):
-    def __init__(self, platform, api_key="", model_name="", response_format="json"):
+    def __init__(self, platform, base_url, api_keys=[""], model_name="", response_format="json"):
         super().__init__(platform, model_name)
-        api_keys = default_api_keys["Api_keys"]
-        default_api_key = api_keys[platform]
 
-        self.base_url = default_api_key["base_url"]
-        base_api_key = default_api_key["api_key"]
+        self.base_url = base_url
+        self.api_keys = api_keys
+        self.api_key = api_keys[0]
 
         # 处理流式输出
         if platform == "modelscope":
@@ -111,11 +109,6 @@ class BaseOpenai(BaseClient):
             else:
                 self.response_format = {"type": "text"}
             self.extra_body = {"response_format": self.response_format}
-
-        if api_key == "":
-            self.api_key = base_api_key
-        else:
-            self.api_key = api_key
 
         self.platform = platform
 

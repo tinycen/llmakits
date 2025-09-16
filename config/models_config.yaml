@@ -1,0 +1,31 @@
+Models_config:
+
+  generate_title:
+
+    - sdk_name: "dashscope"
+      model_name: "qwen3-max-preview"
+
+    - sdk_name: "zhipu"
+      model_name: "glm-4-plus"
+
+  option_name:
+    - sdk_name: "dashscope"
+      model_name: "qwen3-max-preview"
+
+    - sdk_name: "zhipu"
+      model_name: "glm-4-plus"
+
+  key_word:
+    - sdk_name: "dashscope"
+      model_name: "qwen3-max-preview"
+
+    - sdk_name: "zhipu"
+      model_name: "glm-4-plus"
+
+  translate_box:
+
+    - sdk_name: "modelscope"
+      model_name: "Qwen/Qwen3-32B"
+
+    - sdk_name: "modelscope"
+      model_name: "deepseek-ai/DeepSeek-V3"

@@ -2,21 +2,23 @@ from filekits.base_io.load import load_yaml
 from llmkit.llm_client import BaseOpenai
 
 
-def load_models(yaml_path):
+def load_models(models_config_path, model_keys_path):
     """
-    从YAML配置文件加载模型配置并实例化模型
+    从YAML配置文件加载LLM模型配置并实例化模型
     
     Args:
-        yaml_path (str): YAML配置文件路径
+        models_config_path (str): LLM模型配置文件路径
+        model_keys_path (str): LLM API凭证配置文件路径
         
     Returns:
         dict: 按组分类的模型实例字典
         
     Example:
-        >>> models = load_models('config/models.yaml')
+        >>> models= load_models('config/llm_models_config.yaml', 'config/keys_config.yaml')
         >>> print(models.keys())  # 显示模型分组
     """
-    model_config = load_yaml(yaml_path)
+    model_config = load_yaml(models_config_path)    
+    model_keys = load_yaml(model_keys_path)
     models_config = model_config["Models_config"]
     """
     {'Models_config': {'option_type': [{'model_name': 'Qwen/Qwen2.5-32B-Instruct', 'sdk_name': 'modelscope'}, 
@@ -32,7 +34,8 @@ def load_models(yaml_path):
         for model_info in model_list:
             sdk_name = model_info["sdk_name"]
             model_name = model_info["model_name"]
-            api_key = model_info.get("api_key", "")
+            base_url = model_keys[sdk_name]["base_url"]
+            api_keys = model_keys[sdk_name]["api_keys"]
 
             # 使用模型名称作为唯一标识符
             model_key = f"{sdk_name}:{model_name}"
@@ -46,7 +49,7 @@ def load_models(yaml_path):
                 })
             else:
                 # 创建新的模型实例
-                mini_model = BaseOpenai(sdk_name, api_key, model_name)
+                mini_model = BaseOpenai(sdk_name,  base_url, api_keys, model_name)
 
                 # 将新创建的模型实例添加到全局缓存
                 model_instances[model_key] = mini_model
