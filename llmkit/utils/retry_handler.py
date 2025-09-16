@@ -130,10 +130,10 @@ class RetryHandler:
         )
         
         return True, messages
-    
+
     def handle_exception(self, e: Exception, api_retry_count: int, 
                         messages: Any, message_config: Dict, platform: str, 
-                        model_name: str) -> Tuple[bool, Any]:
+                        model_name: str) -> Tuple[bool, Any, bool]:
         """处理异常和重试逻辑
         
         参数:
@@ -145,7 +145,7 @@ class RetryHandler:
             model_name: 模型名称
             
         返回:
-            Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
+            Tuple[bool, Any, bool]: (是否继续重试, 更新后的messages对象, 是否需要切换API密钥)
         """
         # 打印当前的模型信息
         print(f"当前 云服务商: {platform}，模型: {model_name}")
@@ -156,14 +156,16 @@ class RetryHandler:
         
         # 判断是否应该重试
         if self.should_retry_for_rate_limit(error_message):
-            return self.handle_rate_limit_error(error_message, api_retry_count, messages, message_config)
+            should_retry, updated_messages = self.handle_rate_limit_error(error_message, api_retry_count, messages, message_config)
+            return should_retry, updated_messages, False
         
         elif self.should_retry_for_image_error(error_message, message_config):
-            return self.handle_image_error(messages, message_config)
+            should_retry, updated_messages = self.handle_image_error(messages, message_config)
+            return should_retry, updated_messages, False
         
         elif "Request limit exceeded" in error_message:
-            print("模型每日请求超过限制.")
-            raise Exception('Request limit exceeded')
+            print("模型每日请求超过限制")
+            return True, messages, True  # 需要重试且需要切换API密钥
         
         else:
             error_message = f"其他异常错误：{e}"

@@ -58,16 +58,23 @@ class BaseClient:
                 
             except Exception as e:
                 # 处理异常和重试逻辑
-                should_retry, messages = self.retry_handler.handle_exception(
-                    e, api_retry_count, messages, request_data,
+                should_retry, messages, should_switch_key = self.retry_handler.handle_exception(
+                    e, api_retry_count, messages, request_data, 
                     self.platform, self.model_name
                 )
+                
+                if should_switch_key:
+                    # 切换API密钥
+                    if not self.switch_api_key():
+                        raise Exception('没有可用的API密钥进行切换')
                 
                 if should_retry:
                     api_retry_count += 1
                     continue
                 else:
                     raise
+        
+        raise Exception(f"api_retry 达到最大重试次数：{max_retries}")
 
     def _create_chat_completion(self, messages):
         """创建聊天完成请求"""
@@ -85,12 +92,10 @@ class BaseClient:
 
 # 定义 BaseOpenai 类
 class BaseOpenai(BaseClient):
-    def __init__(self, platform, base_url, api_keys=[""], model_name="", response_format="json"):
+    def __init__(self, platform, base_url, api_keys, model_name, response_format="json"):
         super().__init__(platform, model_name)
-
         self.base_url = base_url
         self.api_keys = api_keys
-        self.api_key = api_keys[0]
 
         # 处理流式输出
         if platform == "modelscope":
@@ -113,10 +118,25 @@ class BaseOpenai(BaseClient):
         self.platform = platform
 
         # 初始化客户端
+        self._init_client()
+    
+    def _init_client(self):
+        """初始化客户端，使用第1个密钥"""
+        self.api_key = self.api_keys[0]
         if self.platform == "zhipu":
             self.client = ZhipuAI(api_key=self.api_key)
         else:
             self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+    
+    def switch_api_key(self):
+        """切换API密钥并重新初始化客户端"""
+        api_keys_num = len(self.api_keys)
+        if api_keys_num >= 2:
+            self.api_keys.pop(0)  # 移除第一个密钥
+            print(f"移除已用完的密钥，剩余 {api_keys_num-1} 个密钥")
+            self._init_client()
+            return True
+        return False
 
     def models_df(self):
         if self.client is None:
