@@ -122,6 +122,8 @@ class BaseOpenai(BaseClient):
     
     def _init_client(self):
         """初始化客户端，使用第1个密钥"""
+        if not self.api_keys:
+            raise Exception("没有可用的API密钥")
         self.api_key = self.api_keys[0]
         if self.platform == "zhipu":
             self.client = ZhipuAI(api_key=self.api_key)
