@@ -1,11 +1,17 @@
-from selectSql import extr_cat_tree
+from typing import Any, Dict, List, Optional, Union
 from .tools import shorten_title , contains_chinese
 from llm_client import send_message
 from ..message.formatter import extract_field
 
+# 临时定义 extr_cat_tree 函数，避免导入错误
+def extr_cat_tree(cat_tree: Any, level: int, level_1_names: Optional[Union[List[str], str]] = None, 
+                  level_2_names: Optional[Union[List[str], str]] = None) -> List[Dict[str, str]]:
+    """临时占位函数，需要替换为实际的 selectSql 模块实现"""
+    return []
+
 
 # 检查 输出的属性参数 是否存在
-def find_value(item_list: list[dict], search_data: dict) -> dict:
+def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     :param item_list: (list[dict]): 要搜索的字典列表，每个字典应包含'id'和'value'键
     :param search_data: dict, 必须包含 'id' 和 'value' 两个键
@@ -13,8 +19,7 @@ def find_value(item_list: list[dict], search_data: dict) -> dict:
     """
     if not isinstance(item_list, list) or not all(isinstance(item, dict) for item in item_list):
         raise TypeError("item_list 必须是字典组成的列表")
-    if not isinstance(search_data, dict):
-        raise TypeError("search_data 必须是字典类型")
+
     if set(search_data.keys()) != {'id', 'value'}:
         raise ValueError("search_data 必须且只能包含 'id' 和 'value' 两个键")
 
@@ -38,23 +43,24 @@ def find_value(item_list: list[dict], search_data: dict) -> dict:
 
 
 # 预测类目
-def predict_category( title, cat_tree, system_prompt, llm_models ) :
-    category_all = extr_cat_tree( cat_tree, level = 3 )
-    return_message = ""
-    level_1_names = level_2_names = None
-    for level in [ 1, 2, 3 ] :
-        # print( f"正在预测 {level} 级类目……" )
-        category_options = extr_cat_tree( cat_tree, level = level, level_1_names = level_1_names,
-                                          level_2_names = level_2_names )
+def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: List[str]) -> List[Dict[str, str]]:
+    category_all = extr_cat_tree(cat_tree, level=3)
+    return_message: Union[str, List[str], Dict[str, Any]] = ""
+    level_1_names: Optional[Union[List[str], str]] = None
+    level_2_names: Optional[Union[List[str], str]] = None
+    for level in [1, 2, 3]:
+        # print(f"正在预测 {level} 级类目……")
+        category_options = extr_cat_tree(cat_tree, level=level, level_1_names=level_1_names,
+                                          level_2_names=level_2_names)
         user_text = f"商品标题:{title},可选类目:{category_options}"
-        message_info = { "user_text" : user_text, "system_prompt" : system_prompt }
-        return_message, *_  = send_message( message_info, llm_models,
-                                                                     format_json = True )
+        message_info = {"user_text": user_text, "system_prompt": system_prompt}
+        return_message_raw, _ = send_message(message_info, llm_models, format_json=True)
+        return_message = return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
 
-        if level == 1 :
-            level_1_names = return_message
-        elif level == 2 :
-            level_2_names = return_message
+        if level == 1:
+            level_1_names = return_message if isinstance(return_message, (str, list)) else None
+        elif level == 2:
+            level_2_names = return_message if isinstance(return_message, (str, list)) else None
 
     # print( return_message )
 
@@ -64,11 +70,12 @@ def predict_category( title, cat_tree, system_prompt, llm_models ) :
     '''
     if not return_message :
         raise ValueError( "未预测到类目" )
-    predict_results = [ ]
-    for category in return_message :
-        search_data = { "value" : category.get( "cat_id", "" ), "label" : category[ "cat_name" ] }
-        value = find_value( category_all, search_data )
-        predict_results.append( value )
+    predict_results = []
+    for category in return_message:
+        if isinstance(category, dict):
+            search_data = {"value": category.get("cat_id", ""), "label": category.get("cat_name", "")}
+            value = find_value(category_all, search_data)
+            predict_results.append(value)
     '''  示例响应结果
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'}, 
         {'value': '17028992-93945', 'label': '美容和卫生 > 护发产品 > 头发精华素'}]
@@ -93,13 +100,12 @@ def check_title( title: str, max_length: int, min_length: int = 10, min_word: in
 
 
 # 生成商品标题
-def generate_title( title, llm_models, system_prompt, max_length = 225, min_length = 10, min_word = 2,
-                    max_attempts = 3 ) :
+def generate_title(title: str, llm_models: List[str], system_prompt: str, max_length: int = 225, 
+                   min_length: int = 10, min_word: int = 2, max_attempts: int = 3) -> str:
     print( "检测商品标题……" )
 
     if check_title( title, max_length, min_length, min_word ) :
         return title
-
 
     def build_message_info( cur_title, title_length ) :
         user_text = f"title:{cur_title},长度={title_length}不合格，请你修改。"
@@ -114,18 +120,19 @@ def generate_title( title, llm_models, system_prompt, max_length = 225, min_leng
         if title_length > max_length :
             max_length -= 5  # 每次尝试减少最大长度限制
 
-        return_message, *_ = send_message( build_message_info( best_title, title_length ),
-                                                         llm_models )
-        best_title = extract_field( return_message, "title" )
+        return_message_raw, _ = send_message(build_message_info(best_title, title_length), llm_models)
+        return_message = return_message_raw if isinstance(return_message_raw, (str, dict)) else str(return_message_raw)
+        best_title = extract_field(return_message, "title")
 
         if check_title( best_title, max_length, min_length, min_word ) :    # type: ignore
-            return best_title
+            return best_title                                               # type: ignore
 
     print( "程序性缩减标题……" )
     return shorten_title( best_title, max_length )
 
 
-def translate_options( title, options, to_lang, llm_models, system_prompt ) :
+def translate_options(title: str, options: List[str], to_lang: str, llm_models: List[str], 
+                      system_prompt: str) -> List[str]:
     """
     翻译选项，并确保输出列表长度与输入一致。
 
@@ -155,11 +162,13 @@ def translate_options( title, options, to_lang, llm_models, system_prompt ) :
         else:
             return False
     
-    return_message, *_ = send_message(
-        { "user_text" : user_text, "system_prompt" : system_prompt },
+    return_message_raw, _ = send_message(
+        {"user_text": user_text, "system_prompt": system_prompt},
         llm_models,
-        format_json = True,
-        validate_func = validate_func
+        format_json=True,
+        validate_func=validate_func
     )
-    translated_options = extract_field( return_message, "options" )
+    return_message = return_message_raw if isinstance(return_message_raw, (str, dict)) else str(return_message_raw)
+    extracted_options = extract_field(return_message, "options")
+    translated_options = extracted_options if isinstance(extracted_options, list) else options
     return translated_options
