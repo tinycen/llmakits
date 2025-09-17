@@ -44,7 +44,7 @@ def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> 
 
 
 # 预测类目
-def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: List[str]) -> List[Dict[str, str]]:
+def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: List[str]) -> Tuple[List[Dict[str, str]], int]:
     category_all = extr_cat_tree(cat_tree, level=3)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
@@ -55,7 +55,7 @@ def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: 
                                           level_2_names=level_2_names)
         user_text = f"商品标题:{title},可选类目:{category_options}"
         message_info = {"user_text": user_text, "system_prompt": system_prompt}
-        return_message_raw, _ = send_message(message_info, llm_models, format_json=True)
+        return_message_raw, _, model_switch_count = send_message( message_info, llm_models, format_json=True )
         return_message = return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
 
         if level == 1:
@@ -81,7 +81,7 @@ def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: 
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'}, 
         {'value': '17028992-93945', 'label': '美容和卫生 > 护发产品 > 头发精华素'}]
     '''
-    return predict_results
+    return predict_results, model_switch_count
 
 
 # 检查标题是否需要修改
@@ -101,7 +101,7 @@ def check_title( title: str, max_length: int, min_length: int = 10, min_word: in
 
 
 # 生成商品标题
-def generate_title(title: str, llm_models: List[str], system_prompt: str, max_length: int = 225, 
+def generate_title(title: str, llm_models: List, system_prompt: str, max_length: int = 225, 
                    min_length: int = 10, min_word: int = 2, max_attempts: int = 3) -> str:
     print( "检测商品标题……" )
 
@@ -121,12 +121,12 @@ def generate_title(title: str, llm_models: List[str], system_prompt: str, max_le
         if title_length > max_length :
             max_length -= 5  # 每次尝试减少最大长度限制
 
-        return_message_raw, _ = send_message(build_message_info(best_title, title_length), llm_models)
-        return_message = return_message_raw if isinstance(return_message_raw, (str, dict)) else str(return_message_raw)
+        return_message, _, _ = execute_task( build_message_info(best_title, title_length), 
+                                                llm_models, format_json=True)
         best_title = extract_field(return_message, "title")
 
         if check_title( best_title, max_length, min_length, min_word ) :    # type: ignore
-            return best_title                                               # type: ignore
+            return best_title                         # type: ignore
 
     print( "程序性缩减标题……" )
     return shorten_title( best_title, max_length )
@@ -163,12 +163,11 @@ def translate_options(title: str, options: List[str], to_lang: str, llm_models: 
         else:
             return False
     
-    return_message_raw, _, model_switch_count = execute_task(
+    return_message, _, model_switch_count = execute_task(
         {"user_text": user_text, "system_prompt": system_prompt},
         llm_models,
         format_json=True,
         validate_func=validate_func
     )
-    return_message = return_message_raw if isinstance(return_message_raw, (str, dict)) else str(return_message_raw)
     extracted_options = extract_field(return_message, "options")    
     return extracted_options, model_switch_count        # type: ignore
