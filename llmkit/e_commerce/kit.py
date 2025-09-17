@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional, Union, Tuple
 from .tools import shorten_title , contains_chinese
-from llm_client import send_message
 from dispatcher import execute_task
 from ..message.formatter import extract_field
 
@@ -44,7 +43,7 @@ def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> 
 
 
 # 预测类目
-def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: List[str]) -> Tuple[List[Dict[str, str]], int]:
+def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: List) -> Tuple[List[Dict[str, str]], int]:
     category_all = extr_cat_tree(cat_tree, level=3)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
@@ -55,7 +54,7 @@ def predict_category(title: str, cat_tree: Any, system_prompt: str, llm_models: 
                                           level_2_names=level_2_names)
         user_text = f"商品标题:{title},可选类目:{category_options}"
         message_info = {"user_text": user_text, "system_prompt": system_prompt}
-        return_message_raw, _, model_switch_count = send_message( message_info, llm_models, format_json=True )
+        return_message_raw, _, model_switch_count = execute_task( message_info, llm_models, format_json=True )
         return_message = return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
 
         if level == 1:
