@@ -1,0 +1,68 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# 顶层配置文件
+root = true
+
+# 所有文件通用设置
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+tab_width = 4
+insert_final_newline = false
+trim_trailing_whitespace = true
+max_line_length = 120
+
+# Python 文件特定设置
+[*.py]
+indent_size = 4
+tab_width = 4
+max_line_length = 120
+
+# JSON 文件
+[{*.json,*.jsonc}]
+indent_size = 2
+tab_width = 2
+
+# YAML 文件
+[{*.yaml,*.yml}]
+indent_size = 2
+tab_width = 2
+
+# HTML 文件
+[{*.htm,*.html,*.sht,*.shtm,*.shtml}]
+indent_size = 2
+tab_width = 2
+
+# Shell 脚本
+[{*.bash,*.sh,*.zsh}]
+indent_size = 2
+tab_width = 2
+
+# Markdown 文件
+[{*.markdown,*.md}]
+trim_trailing_whitespace = false
+
+# XML 文件
+[{*.ant,*.fxml,*.jhm,*.jnlp,*.jrxml,*.rng,*.tld,*.wsdl,*.xml,*.xsd,*.xsl,*.xslt,*.xul}]
+indent_size = 2
+tab_width = 2
+
+# Properties 文件
+[*.properties]
+indent_size = 4
+
+# TOML 文件
+[*.toml]
+indent_size = 2
+tab_width = 2
+
+# HTTP/REST 文件
+[{*.http,*.rest}]
+indent_size = 4
+
+# Puppet 文件
+[*.pp]
+indent_size = 2
+tab_width = 2
