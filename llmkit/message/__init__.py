@@ -4,20 +4,13 @@ Message处理模块
 """
 
 from .builder import prepare_messages, rebuild_messages_single_image
-from .formatter import (
-    remove_think_section,
-    extract_json_from_string,
-    convert_to_json,
-    extract_field
-)
+from .formatter import convert_to_json, extract_field
 from .validator import validate_message_format
 
 __all__ = [
     'prepare_messages',
     'rebuild_messages_single_image',
-    'remove_think_section',
-    'extract_json_from_string',
     'convert_to_json',
     'extract_field',
-    'validate_message_format'
+    'validate_message_format',
 ]
