@@ -7,14 +7,14 @@ from typing import List, Dict, Any, Optional, Callable
 from llmkit.message import convert_to_json
 
 
-def send_with_fallback(
+def execute_task(
     message_info: Dict[str, Any],
     llm_models: List[Dict[str, Any]],
     format_json: bool = False,
     validate_func: Optional[Callable[[str], bool]] = None
 ) -> tuple[str, int, int]:
     """
-    多模型调度器 - 支持故障转移和重试
+    执行任务 - 多模型调度器支持故障转移和重试
     
     Args:
         message_info: 消息配置信息

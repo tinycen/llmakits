@@ -1,6 +1,7 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 from .tools import shorten_title , contains_chinese
 from llm_client import send_message
+from dispatcher import execute_task
 from ..message.formatter import extract_field
 
 # 临时定义 extr_cat_tree 函数，避免导入错误
@@ -131,8 +132,8 @@ def generate_title(title: str, llm_models: List[str], system_prompt: str, max_le
     return shorten_title( best_title, max_length )
 
 
-def translate_options(title: str, options: List[str], to_lang: str, llm_models: List[str], 
-                      system_prompt: str) -> List[str]:
+def translate_options(title: str, options: List[str], to_lang: str, llm_models: List, 
+                      system_prompt: str) -> Tuple[List[str], int]:
     """
     翻译选项，并确保输出列表长度与输入一致。
 
@@ -145,7 +146,7 @@ def translate_options(title: str, options: List[str], to_lang: str, llm_models: 
     """
     # 首先检测源语言是否包含中文，如果不包含中文，就直接返回原语言
     if not contains_chinese( str( options ) ) :
-        return options
+        return options, 0
 
     user_text = f"title:{title},options:{options},请翻译为:{to_lang}语言"
     
@@ -162,13 +163,12 @@ def translate_options(title: str, options: List[str], to_lang: str, llm_models: 
         else:
             return False
     
-    return_message_raw, _ = send_message(
+    return_message_raw, _, model_switch_count = execute_task(
         {"user_text": user_text, "system_prompt": system_prompt},
         llm_models,
         format_json=True,
         validate_func=validate_func
     )
     return_message = return_message_raw if isinstance(return_message_raw, (str, dict)) else str(return_message_raw)
-    extracted_options = extract_field(return_message, "options")
-    translated_options = extracted_options if isinstance(extracted_options, list) else options
-    return translated_options
+    extracted_options = extract_field(return_message, "options")    
+    return extracted_options, model_switch_count        # type: ignore
