@@ -118,7 +118,7 @@ def generate_title( title, llm_models, system_prompt, max_length = 225, min_leng
                                                          llm_models )
         best_title = extract_field( return_message, "title" )
 
-        if check_title( best_title, max_length, min_length, min_word ) :
+        if check_title( best_title, max_length, min_length, min_word ) :    # type: ignore
             return best_title
 
     print( "程序性缩减标题……" )
