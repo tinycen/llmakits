@@ -1,4 +1,4 @@
-# llmkit
+# llmakits
 
 一个功能强大的Python工具包，用于简化大语言模型(LLM)的集成和管理。支持多模型调度、故障转移、负载均衡等功能。
 
@@ -15,13 +15,13 @@
 ## 安装
 
 ```bash
-pip install llmkit
+pip install llmakits
 ```
 
 更新：
 
 ```bash
-pip install --upgrade llmkit
+pip install --upgrade llmakits
 ```
 
 ## 快速开始
@@ -57,7 +57,7 @@ zhipu:
 ### 2. 加载模型
 
 ```python
-from llmkit import load_models
+from llmakits import load_models
 
 # 加载配置好的模型
 models = load_models('config/models_config.yaml', 'config/keys_config.yaml')
@@ -71,7 +71,7 @@ my_models = models['my_models']
 #### 使用新的 ModelDispatcher 类（推荐）
 
 ```python
-from llmkit.dispatcher import ModelDispatcher
+from llmakits.dispatcher import ModelDispatcher
 
 # 创建调度器实例
 dispatcher = ModelDispatcher()
@@ -102,7 +102,7 @@ dispatcher.reset_model_switch_count()
 #### 使用兼容函数（旧版本）
 
 ```python
-from llmkit.dispatcher import execute_task
+from llmakits.dispatcher import execute_task
 
 # 准备消息
 message_info = {
@@ -120,7 +120,7 @@ print(f"模型切换次数: {switch_count}")
 ### 4. 直接使用模型客户端
 
 ```python
-from llmkit import BaseOpenai
+from llmakits import BaseOpenai
 
 # 创建模型客户端
 model = BaseOpenai(
@@ -145,7 +145,7 @@ print(f"回复: {result}")
 ### 消息处理
 
 ```python
-from llmkit.message import prepare_messages, extract_json_from_string, convert_to_json
+from llmakits.message import prepare_messages, extract_json_from_string, convert_to_json
 
 # 准备消息
 messages = prepare_messages(system="你是一个助手", user="请帮忙", assistant="好的")
@@ -160,7 +160,7 @@ result = convert_to_json(json_str)
 #### 使用 ModelDispatcher 类（推荐）
 
 ```python
-from llmkit.dispatcher import ModelDispatcher
+from llmakits.dispatcher import ModelDispatcher
 
 # 创建调度器实例
 dispatcher = ModelDispatcher()
@@ -185,7 +185,7 @@ print(f"模型切换次数: {switches}")
 #### 使用兼容函数
 
 ```python
-from llmkit.dispatcher import execute_task
+from llmakits.dispatcher import execute_task
 
 # 带验证函数的任务执行
 def validate_result(result):
@@ -202,7 +202,7 @@ result, tokens = execute_task(
 ### 电商工具
 
 ```python
-from llmkit.e_commerce import ECommerceTools
+from llmakits.e_commerce import ECommerceTools
 
 # 使用电商专用工具
 ec_tools = ECommerceTools()
@@ -249,7 +249,7 @@ platform_name:
 
 ## 错误处理
 
-llmkit内置了完善的错误处理机制：
+llmakits内置了完善的错误处理机制：
 
 - **自动重试**: 请求失败时自动重试，最多5次
 - **密钥切换**: API密钥失效时自动切换到备用密钥
@@ -266,7 +266,7 @@ llmkit内置了完善的错误处理机制：
 
 ### 自定义消息处理
 
-通过 `llmkit.message` 模块提供的工具函数：
+通过 `llmakits.message` 模块提供的工具函数：
 
 - `prepare_messages()`: 准备标准格式的消息
 - `extract_json_from_string()`: 从文本中提取JSON

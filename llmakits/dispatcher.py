@@ -4,7 +4,7 @@
 """
 
 from typing import List, Dict, Any, Optional, Callable
-from llmkit.message import convert_to_json
+from llmakits.message import convert_to_json
 
 
 class ModelDispatcher:

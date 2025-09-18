@@ -4,7 +4,7 @@ from typing import Optional, Union
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
-from llmkit.utils.retry_handler import RetryHandler, ResponseHandler
+from llmakits.utils.retry_handler import RetryHandler, ResponseHandler
 
 from funcguard.core import timeout_handler
 

@@ -39,7 +39,7 @@ class RetryHandler:
                 "include_img": message_info.get("include_img", False),
                 "img_list": message_info.get("img_list", [])
             })
-            from llmkit.message import prepare_messages
+            from llmakits.message import prepare_messages
             messages = prepare_messages(
                 self.platform, 
                 message_config["system_prompt"], 
@@ -92,7 +92,7 @@ class RetryHandler:
         print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
         # 如果图片：下载或读取 出现问题
         if "Failed to download multimodal content" in error_message and message_config["include_img"]:
-            from llmkit.message import rebuild_messages_single_image
+            from llmakits.message import rebuild_messages_single_image
             img_list = message_config["img_list"]
             
             messages = rebuild_messages_single_image(
@@ -117,7 +117,7 @@ class RetryHandler:
         返回:
             Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
         """
-        from llmkit.message import rebuild_messages_single_image
+        from llmakits.message import rebuild_messages_single_image
         
         print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
         

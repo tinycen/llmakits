@@ -15,7 +15,7 @@ except FileNotFoundError:
     install_requires = []
 
 setup(
-    name='llmkits',
+    name='llmakits',
     version='0.1.0',
     packages=find_packages(),
     install_requires=install_requires,
@@ -24,13 +24,13 @@ setup(
     description='A powerful Python toolkit for simplifying LLM integration and management with multi-model scheduling, fault tolerance, and load balancing support',
     keywords='llm, ai, chatgpt, openai, zhipu, dashscope, modelscope, multi-model, scheduling, fault-tolerance',
     project_urls={
-        'Source': 'https://github.com/tinycen/llmkit',
-        'Documentation': 'https://github.com/tinycen/llmkit#readme',
-        'Bug Reports': 'https://github.com/tinycen/llmkit/issues',
+        'Source': 'https://github.com/tinycen/llmakits',
+        'Documentation': 'https://github.com/tinycen/llmakits#readme',
+        'Bug Reports': 'https://github.com/tinycen/llmakits/issues',
     },
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/tinycen/llmkit',
+    url='https://github.com/tinycen/llmakits',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
