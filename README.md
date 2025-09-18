@@ -68,6 +68,39 @@ my_models = models['my_models']
 
 ### 3. 发送消息
 
+#### 使用新的 ModelDispatcher 类（推荐）
+
+```python
+from llmkit.dispatcher import ModelDispatcher
+
+# 创建调度器实例
+dispatcher = ModelDispatcher()
+
+# 准备消息
+message_info = {
+    "system": "你是一个 helpful 助手",
+    "user": "请介绍一下Python编程语言"
+}
+
+# 执行任务
+result, tokens = dispatcher.execute_task(message_info, my_models)
+print(f"结果: {result}")
+print(f"使用token数: {tokens}")
+
+# 按需获取模型切换次数（两种方法）
+switch_count = dispatcher.model_switch_count  # 直接访问属性
+print(f"模型切换次数: {switch_count}")
+
+# 或者使用方法获取
+switch_count = dispatcher.get_model_switch_count()
+print(f"模型切换次数: {switch_count}")
+
+# 如果需要执行多个任务，可以重置计数器
+dispatcher.reset_model_switch_count()
+```
+
+#### 使用兼容函数（旧版本）
+
 ```python
 from llmkit.dispatcher import execute_task
 
@@ -124,6 +157,33 @@ result = convert_to_json(json_str)
 
 ### 模型调度
 
+#### 使用 ModelDispatcher 类（推荐）
+
+```python
+from llmkit.dispatcher import ModelDispatcher
+
+# 创建调度器实例
+dispatcher = ModelDispatcher()
+
+# 带验证函数的任务执行
+def validate_result(result):
+    return "error" not in result.lower()
+
+# 执行任务
+result, tokens = dispatcher.execute_task(
+    message_info={"user": "生成一段JSON"},
+    llm_models=my_models,
+    format_json=True,  # 格式化为JSON
+    validate_func=validate_result  # 验证结果
+)
+
+# 获取模型切换次数
+switches = dispatcher.model_switch_count  # 直接访问属性
+print(f"模型切换次数: {switches}")
+```
+
+#### 使用兼容函数
+
 ```python
 from llmkit.dispatcher import execute_task
 
@@ -131,7 +191,7 @@ from llmkit.dispatcher import execute_task
 def validate_result(result):
     return "error" not in result.lower()
 
-result, tokens, switches = execute_task(
+result, tokens = execute_task(
     message_info={"user": "生成一段JSON"},
     llm_models=my_models,
     format_json=True,  # 格式化为JSON
@@ -211,7 +271,6 @@ llmkit内置了完善的错误处理机制：
 - `prepare_messages()`: 准备标准格式的消息
 - `extract_json_from_string()`: 从文本中提取JSON
 - `validate_message_format()`: 验证消息格式
-- `remove_think_section()`: 移除思考过程内容
 
 ## 许可证
 

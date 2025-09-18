@@ -9,38 +9,36 @@ from typing import Any, Dict, List
 def validate_message_format(messages: List[Dict[str, Any]], provider_name: str) -> bool:
     """
     验证消息格式是否符合指定提供商的要求
-    
+
     Args:
         messages: 消息列表
         provider_name: 提供商名称
-        
+
     Returns:
         True如果格式有效，False否则
     """
-    if not isinstance(messages, list):
-        return False
-    
+
     if len(messages) < 1:
         return False
-    
+
     # 验证每条消息的基本结构
     for message in messages:
         if not isinstance(message, dict):
             return False
-        
+
         if 'role' not in message or 'content' not in message:
             return False
-        
+
         if message['role'] not in ['system', 'user', 'assistant']:
             return False
-    
+
     # 根据提供商验证特定格式
     return _validate_provider_format(messages, provider_name)
 
 
 def _validate_provider_format(messages: List[Dict[str, Any]], provider_name: str) -> bool:
     """验证特定提供商的消息格式"""
-    
+
     if provider_name == "dashscope":
         return _validate_dashscope_format(messages)
     elif provider_name in ["zhipu", "openai", "modelscope"]:
