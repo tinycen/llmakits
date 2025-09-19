@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union, Tuple
 from .tools import shorten_title, contains_chinese
 from dispatcher import execute_task
-from ..message.formatter import extract_field
+from ..message import extract_field
 
 
 # 临时定义 extr_cat_tree 函数，避免导入错误

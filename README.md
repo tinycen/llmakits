@@ -145,7 +145,7 @@ print(f"回复: {result}")
 ### 消息处理
 
 ```python
-from llmakits.message import prepare_messages, extract_json_from_string, convert_to_json
+from llmakits.message import prepare_messages, extract_field, convert_to_json
 
 # 准备消息
 messages = prepare_messages(system="你是一个助手", user="请帮忙", assistant="好的")
@@ -153,6 +153,16 @@ messages = prepare_messages(system="你是一个助手", user="请帮忙", assis
 # 提取并转换为JSON
 json_str = '{"name": "test"} some text'
 result = convert_to_json(json_str)
+
+# 提取字段
+field_value = extract_field(json_str, "name")
+print(field_value)  # 输出: test
+
+# 提取多个字段
+name, age = extract_field(json_str, "name", "age")
+print(name)  # 输出: test
+print(age)  # 输出: None
+
 ```
 
 ### 模型调度
@@ -255,22 +265,6 @@ llmakits内置了完善的错误处理机制：
 - **密钥切换**: API密钥失效时自动切换到备用密钥
 - **模型切换**: 当前模型失败时自动尝试下一个可用模型
 - **异常捕获**: 详细的异常信息和处理建议
-
-## 开发指南
-
-### 添加新的模型平台
-
-1. 继承 `BaseClient` 类实现新的客户端
-2. 在 `BaseOpenai` 中添加平台特定的处理逻辑
-3. 更新配置文件格式支持
-
-### 自定义消息处理
-
-通过 `llmakits.message` 模块提供的工具函数：
-
-- `prepare_messages()`: 准备标准格式的消息
-- `extract_json_from_string()`: 从文本中提取JSON
-- `validate_message_format()`: 验证消息格式
 
 ## 许可证
 

@@ -5,12 +5,5 @@ Message处理模块
 
 from .builder import prepare_messages, rebuild_messages_single_image
 from .formatter import convert_to_json, extract_field
-from .validator import validate_message_format
 
-__all__ = [
-    'prepare_messages',
-    'rebuild_messages_single_image',
-    'convert_to_json',
-    'extract_field',
-    'validate_message_format',
-]
+__all__ = ['prepare_messages', 'rebuild_messages_single_image', 'convert_to_json', 'extract_field']
