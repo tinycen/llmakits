@@ -91,12 +91,6 @@ print(f"使用token数: {tokens}")
 switch_count = dispatcher.model_switch_count  # 直接访问属性
 print(f"模型切换次数: {switch_count}")
 
-# 或者使用方法获取
-switch_count = dispatcher.get_model_switch_count()
-print(f"模型切换次数: {switch_count}")
-
-# 如果需要执行多个任务，可以重置计数器
-dispatcher.reset_model_switch_count()
 ```
 
 #### 使用兼容函数（旧版本）

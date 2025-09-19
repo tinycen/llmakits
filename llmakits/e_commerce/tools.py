@@ -41,8 +41,16 @@ def shorten_title(title, target_length=100, split_char=" "):
 # 校验HTML字符串是否合规
 def validate_html(html_string: str, allowed_tags: set[str]):
     """
-    校验HTML字符串是否仅包含指定的标签。
-    不检查标签是否正确闭合。
+    校验HTML字符串是否仅包含指定的标签，并检查标签是否正确闭合。
+
+    Args:
+        html_string: 要校验的HTML字符串
+        allowed_tags: 允许使用的标签集合
+
+    Returns:
+        tuple: (是否校验通过, 错误信息)
+               如果校验通过，返回(True, "")
+               如果校验失败，返回(False, 错误描述字符串)
     """
 
     # 查找所有HTML标签 (包括开始标签、结束标签和自闭合标签)
@@ -52,13 +60,78 @@ def validate_html(html_string: str, allowed_tags: set[str]):
     # 将找到的标签名转换为小写集合以便比较
     found_tag_names = {tag.lower() for tag in found_tags}
 
-    unallowed_tags = None
     # 检查所有找到的标签是否都在允许的列表中
-    if found_tag_names.issubset(allowed_tags):
-        print("校验成功: HTML 符合指定规范。")
-        return True, unallowed_tags
-    else:
-        # 找出具体是哪些未被允许的标签被使用了
-        unallowed_tags = found_tag_names - allowed_tags
-        print(f"校验失败: 发现未被允许的标签 {unallowed_tags}")
-        return False, unallowed_tags
+    unallowed_tags = found_tag_names - allowed_tags
+
+    # 检查标签闭合情况
+    unclosed_tags = check_tag_closing(html_string)
+
+    # 构建错误信息
+    error_messages = []
+
+    if unallowed_tags:
+        error_messages.append(f"发现未被允许的标签: {', '.join(sorted(unallowed_tags))}")
+
+    if unclosed_tags:
+        error_messages.append(f"发现未正确闭合的标签: {', '.join(sorted(unclosed_tags))}")
+
+    # 返回结果
+    if error_messages:
+        return False, '; '.join(error_messages)
+
+    return True, ""
+
+
+def check_tag_closing(html_string: str):
+    """
+    检查HTML字符串中的标签是否正确闭合。
+
+    Args:
+        html_string: 要检查的HTML字符串
+
+    Returns:
+        set: 未正确闭合的标签名集合
+    """
+    # 自闭合标签列表
+    self_closing_tags = {
+        'br',
+        'hr',
+        'img',
+        'input',
+        'meta',
+        'link',
+        'area',
+        'base',
+        'col',
+        'embed',
+        'source',
+        'track',
+        'wbr',
+    }
+
+    # 匹配开始标签、结束标签和自闭合标签
+    tag_pattern = r'<\s*(/?)([a-zA-Z]+)[^>]*>'
+    tags = re.findall(tag_pattern, html_string)
+
+    tag_stack = []
+    unclosed_tags = set()
+
+    for is_closing, tag_name in tags:
+        tag_name = tag_name.lower()
+
+        # 跳过自闭合标签
+        if tag_name in self_closing_tags:
+            continue
+
+        if not is_closing:  # 开始标签
+            tag_stack.append(tag_name)
+        else:  # 结束标签
+            if tag_stack and tag_stack[-1] == tag_name:
+                tag_stack.pop()
+            else:
+                # 标签未正确闭合
+                unclosed_tags.add(tag_name)
+
+    # 栈中剩余的标签都是未闭合的
+    unclosed_tags.update(tag_stack)
+    return unclosed_tags

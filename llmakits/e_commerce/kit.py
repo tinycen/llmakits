@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union, Tuple
-from .tools import shorten_title, contains_chinese
-from dispatcher import execute_task
+from .tools import shorten_title, contains_chinese, validate_html
 from ..message import extract_field
+from llmakits.dispatcher import ModelDispatcher
 
 
 # 临时定义 extr_cat_tree 函数，避免导入错误
@@ -48,9 +48,7 @@ def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> 
 
 
 # 预测类目
-def predict_category(
-    title: str, cat_tree: Any, system_prompt: str, llm_models: List
-) -> Tuple[List[Dict[str, str]], int]:
+def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, llm_models: List):
     category_all = extr_cat_tree(cat_tree, level=3)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
@@ -62,7 +60,7 @@ def predict_category(
         )
         user_text = f"商品标题:{title},可选类目:{category_options}"
         message_info = {"user_text": user_text, "system_prompt": system_prompt}
-        return_message_raw, _, model_switch_count = execute_task(message_info, llm_models, format_json=True)
+        return_message_raw, _ = dispatcher.execute_task(message_info, llm_models, format_json=True)
         return_message = (
             return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
         )
@@ -90,7 +88,7 @@ def predict_category(
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'},
         {'value': '17028992-93945', 'label': '美容和卫生 > 护发产品 > 头发精华素'}]
     '''
-    return predict_results, model_switch_count
+    return predict_results
 
 
 # 检查标题是否需要修改
@@ -111,6 +109,7 @@ def check_title(title: str, max_length: int, min_length: int = 10, min_word: int
 
 # 生成商品标题
 def generate_title(
+    dispatcher: ModelDispatcher,
     title: str,
     llm_models: List,
     system_prompt: str,
@@ -136,7 +135,9 @@ def generate_title(
         if title_length > max_length:
             max_length -= 5  # 每次尝试减少最大长度限制
 
-        return_message, _, _ = execute_task(build_message_info(best_title, title_length), llm_models, format_json=True)
+        return_message, _ = dispatcher.execute_task(
+            build_message_info(best_title, title_length), llm_models, format_json=True
+        )
         best_title = extract_field(return_message, "title")
 
         if check_title(best_title, max_length, min_length, min_word):  # type: ignore
@@ -147,8 +148,8 @@ def generate_title(
 
 
 def translate_options(
-    title: str, options: List[str], to_lang: str, llm_models: List, system_prompt: str
-) -> Tuple[List[str], int]:
+    dispatcher: ModelDispatcher, title: str, options: List[str], to_lang: str, llm_models: List, system_prompt: str
+):
     """
     翻译选项，并确保输出列表长度与输入一致。
 
@@ -178,11 +179,34 @@ def translate_options(
         else:
             return False
 
-    return_message, _, model_switch_count = execute_task(
+    return_message, _ = dispatcher.execute_task(
         {"user_text": user_text, "system_prompt": system_prompt},
         llm_models,
         format_json=True,
         validate_func=validate_func,
     )
     extracted_options = extract_field(return_message, "options")
-    return extracted_options, model_switch_count  # type: ignore
+    return extracted_options
+
+
+# 验证HTML并修复
+def validate_html_fix(
+    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], llm_models: list, prompt: str
+):
+    """
+    校验HTML字符串是否合规，并修复不允许的标签。
+    不检查标签是否正确闭合。
+    """
+    is_valid, error_messages = validate_html(html_string, allowed_tags)
+    fixed_num = 0
+    max_attempts = 5
+    while not is_valid and fixed_num < max_attempts:
+        fixed_num += 1
+        message_info = {
+            "system_prompt": prompt,
+            "user_text": f"html_string:{html_string},error_messages:{error_messages}",
+        }
+        return_message, _ = dispatcher.execute_task(message_info, llm_models, format_json=True)
+        html_string = return_message["html_string"]
+        is_valid, error_messages = validate_html(html_string, allowed_tags)
+    return html_string

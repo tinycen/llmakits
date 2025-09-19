@@ -15,10 +15,6 @@ class ModelDispatcher:
     def __init__(self):
         self.model_switch_count = 0
 
-    def reset_model_switch_count(self):
-        """重置模型切换次数"""
-        self.model_switch_count = 0
-
     def execute_task(
         self,
         message_info: Dict[str, Any],
