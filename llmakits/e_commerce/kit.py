@@ -195,7 +195,6 @@ def validate_html_fix(
 ):
     """
     校验HTML字符串是否合规，并修复不允许的标签。
-    不检查标签是否正确闭合。
     """
     is_valid, error_messages = validate_html(html_string, allowed_tags)
     fixed_num = 0
