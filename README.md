@@ -66,7 +66,7 @@ models = load_models('config/models_config.yaml', 'config/keys_config.yaml')
 my_models = models['my_models']
 ```
 
-### 3. 发送消息
+### 3. 发送消息（多模型调度）
 
 #### 使用新的 ModelDispatcher 类（推荐）
 
@@ -87,8 +87,8 @@ result, tokens = dispatcher.execute_task(message_info, my_models)
 print(f"结果: {result}")
 print(f"使用token数: {tokens}")
 
-# 按需获取模型切换次数（两种方法）
-switch_count = dispatcher.model_switch_count  # 直接访问属性
+# 获取模型切换次数
+switch_count = dispatcher.model_switch_count
 print(f"模型切换次数: {switch_count}")
 
 ```
@@ -159,66 +159,74 @@ print(age)  # 输出: None
 
 ```
 
-### 模型调度
+### 电商工具
 
-#### 使用 ModelDispatcher 类（推荐）
+#### 基础工具函数
+
+```python
+from llmakits.e_commerce import contains_chinese, remove_chinese, shorten_title, validate_html
+
+# 使用简单函数
+result = contains_chinese("智能手机")  # 返回 True
+title = shorten_title("一个很长的商品标题", 50)  # 缩减到50字符
+
+# HTML验证
+allowed_tags = {'div', 'p', 'span', 'strong', 'em'}
+is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
+```
+
+#### 高级电商功能
 
 ```python
 from llmakits.dispatcher import ModelDispatcher
+from llmakits.e_commerce.kit import generate_title, predict_category, translate_options, validate_html_fix
 
-# 创建调度器实例
+# 创建调度器
 dispatcher = ModelDispatcher()
 
-# 带验证函数的任务执行
-def validate_result(result):
-    return "error" not in result.lower()
-
-# 执行任务
-result, tokens = dispatcher.execute_task(
-    message_info={"user": "生成一段JSON"},
+# 生成优化商品标题
+system_prompt = "你是一个电商标题优化专家"
+title = generate_title(
+    dispatcher=dispatcher,
+    title="原始商品标题",
     llm_models=my_models,
-    format_json=True,  # 格式化为JSON
-    validate_func=validate_result  # 验证结果
+    system_prompt=system_prompt,
+    max_length=225,
+    min_length=10
 )
 
-# 获取模型切换次数
-switches = dispatcher.model_switch_count  # 直接访问属性
-print(f"模型切换次数: {switches}")
-```
+# 预测商品类目
+cat_tree = {}  # 类目树数据
+categories = predict_category(
+    dispatcher=dispatcher,
+    title="商品标题",
+    cat_tree=cat_tree,
+    system_prompt="预测商品类目",
+    llm_models=my_models
+)
 
-#### 使用兼容函数
-
-```python
-from llmakits.dispatcher import execute_task
-
-# 带验证函数的任务执行
-def validate_result(result):
-    return "error" not in result.lower()
-
-result, tokens = execute_task(
-    message_info={"user": "生成一段JSON"},
+# 翻译商品选项
+options = ["红色", "蓝色", "绿色"]
+translated = translate_options(
+    dispatcher=dispatcher,
+    title="商品标题",
+    options=options,
+    to_lang="english",
     llm_models=my_models,
-    format_json=True,  # 格式化为JSON
-    validate_func=validate_result  # 验证结果
+    system_prompt="翻译商品选项"
+)
+
+# 验证并修复HTML
+html_content = "<div>内容</div><script>alert('test')</script>"
+allowed_tags = {'div', 'p', 'span'}
+fixed_html = validate_html_fix(
+    dispatcher=dispatcher,
+    html_string=html_content,
+    allowed_tags=allowed_tags,
+    llm_models=my_models,
+    prompt="修复HTML中的不允许标签"
 )
 ```
-
-### 电商工具
-
-```python
-from llmakits.e_commerce import ECommerceTools
-
-# 使用电商专用工具
-ec_tools = ECommerceTools()
-result = ec_tools.generate_product_description("电子产品", "智能手机")
-```
-
-## 支持的模型平台
-
-- **OpenAI**: GPT-3.5, GPT-4 等系列模型
-- **智谱AI (Zhipu)**: GLM-4, GLM-3 等系列模型
-- **DashScope**: 通义千问系列模型
-- **ModelScope**: 各种开源模型如Qwen、DeepSeek等
 
 ## 配置说明
 
