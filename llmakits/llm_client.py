@@ -39,41 +39,40 @@ class BaseClient:
 
         # 准备请求数据
         messages, request_data = self.retry_handler.prepare_request_data(messages, message_info)
-        
+
         # 执行重试逻辑
         max_retries = 5
         api_retry_count = 0
-        
+
         while api_retry_count < max_retries:
             try:
                 # 创建聊天完成请求
                 response = self._create_chat_completion(messages)
-                
+
                 # 处理响应
                 result, total_tokens = ResponseHandler.handle_response(
-                    response, self.stream, self.stream_real, 
-                    timeout_handler, process_stream_response
+                    response, self.stream, self.stream_real, timeout_handler, process_stream_response
                 )
                 return result, total_tokens
-                
+
             except Exception as e:
                 # 处理异常和重试逻辑
                 should_retry, messages, should_switch_key = self.retry_handler.handle_exception(
-                    e, api_retry_count, messages, request_data, 
-                    self.platform, self.model_name
+                    e, api_retry_count, messages, request_data, self.platform, self.model_name
                 )
-                
+
                 if should_switch_key:
                     # 切换API密钥
                     if not self.switch_api_key():
-                        raise Exception('没有可用的API密钥进行切换')
-                
+                        print("所有API密钥都已用尽，无法继续")
+                        raise Exception('API_KEY_EXHAUSTED')
+
                 if should_retry:
                     api_retry_count += 1
                     continue
                 else:
                     raise
-        
+
         raise Exception(f"api_retry 达到最大重试次数：{max_retries}")
 
     def _create_chat_completion(self, messages):
@@ -86,7 +85,7 @@ class BaseClient:
             temperature=self.temperature,
             top_p=self.top_p,
             stream=self.stream,
-            **self.extra_body  # 传递额外的参数
+            **self.extra_body,  # 传递额外的参数
         )
 
 
@@ -119,7 +118,7 @@ class BaseOpenai(BaseClient):
 
         # 初始化客户端
         self._init_client()
-    
+
     def _init_client(self):
         """初始化客户端，使用第1个密钥"""
         if not self.api_keys:
@@ -129,7 +128,7 @@ class BaseOpenai(BaseClient):
             self.client = ZhipuAI(api_key=self.api_key)
         else:
             self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-    
+
     def switch_api_key(self):
         """切换API密钥并重新初始化客户端"""
         api_keys_num = len(self.api_keys)
@@ -143,7 +142,7 @@ class BaseOpenai(BaseClient):
     def models_df(self):
         if self.client is None:
             raise RuntimeError("客户端未初始化")
-            
+
         # 获取模型列表
         models_page = self.client.models.list()
 
