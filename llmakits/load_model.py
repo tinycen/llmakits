@@ -56,4 +56,4 @@ def load_models(models_config_path, model_keys_path):
 
         models[model_group] = batch_models
 
-    return models
+    return models, model_api_keys

@@ -5,6 +5,7 @@
 
 from typing import List, Dict, Any, Optional, Callable
 from llmakits.message import convert_to_json
+from llmakits.load_model import load_models
 
 
 class ModelDispatcher:
@@ -12,8 +13,13 @@ class ModelDispatcher:
     模型调度器类，负责管理模型切换次数和执行任务
     """
 
-    def __init__(self):
+    def __init__(self, models_config_path: Optional[str] = None, model_keys_path: Optional[str] = None):
         self.model_switch_count = 0
+        if models_config_path and model_keys_path:
+            self.model_groups, self.model_keys = load_models(models_config_path, model_keys_path)
+        else:
+            self.model_groups = {}
+            self.model_keys = {}
 
     def execute_task(
         self,
