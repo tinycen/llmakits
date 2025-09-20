@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Union
 from .tools import shorten_title, contains_chinese, validate_html
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
@@ -48,7 +48,7 @@ def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> 
 
 
 # 预测类目
-def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, llm_models: List):
+def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, group_name: str):
     category_all = extr_cat_tree(cat_tree, level=3)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
@@ -60,7 +60,7 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         )
         user_text = f"商品标题:{title},可选类目:{category_options}"
         message_info = {"user_text": user_text, "system_prompt": system_prompt}
-        return_message_raw, _ = dispatcher.execute_task(message_info, llm_models, format_json=True)
+        return_message_raw, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
         return_message = (
             return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
         )
@@ -111,7 +111,7 @@ def check_title(title: str, max_length: int, min_length: int = 10, min_word: int
 def generate_title(
     dispatcher: ModelDispatcher,
     title: str,
-    llm_models: List,
+    group_name: str,
     system_prompt: str,
     max_length: int = 225,
     min_length: int = 10,
@@ -135,8 +135,8 @@ def generate_title(
         if title_length > max_length:
             max_length -= 5  # 每次尝试减少最大长度限制
 
-        return_message, _ = dispatcher.execute_task(
-            build_message_info(best_title, title_length), llm_models, format_json=True
+        return_message, _ = dispatcher.execute_with_group(
+            build_message_info(best_title, title_length), group_name, format_json=True
         )
         best_title = extract_field(return_message, "title")
 
@@ -148,7 +148,7 @@ def generate_title(
 
 
 def translate_options(
-    dispatcher: ModelDispatcher, title: str, options: List[str], to_lang: str, llm_models: List, system_prompt: str
+    dispatcher: ModelDispatcher, title: str, options: List[str], to_lang: str, group_name: str, system_prompt: str
 ):
     """
     翻译选项，并确保输出列表长度与输入一致。
@@ -156,7 +156,7 @@ def translate_options(
     :param title: 商品标题
     :param options: 原始选项列表
     :param to_lang: 目标语言
-    :param llm_models: 使用的模型列表
+    :param group_name: 模型组名称
     :param system_prompt: 系统提示语
     :return: 翻译后的选项列表
     """
@@ -179,9 +179,9 @@ def translate_options(
         else:
             return False
 
-    return_message, _ = dispatcher.execute_task(
+    return_message, _ = dispatcher.execute_with_group(
         {"user_text": user_text, "system_prompt": system_prompt},
-        llm_models,
+        group_name,
         format_json=True,
         validate_func=validate_func,
     )
@@ -191,7 +191,7 @@ def translate_options(
 
 # 验证HTML并修复
 def validate_html_fix(
-    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], llm_models: list, prompt: str
+    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], group_name: str, prompt: str
 ):
     """
     校验HTML字符串是否合规，并修复不允许的标签。
@@ -205,7 +205,7 @@ def validate_html_fix(
             "system_prompt": prompt,
             "user_text": f"allowed_tags:{allowed_tags},html_string:{html_string},error_messages:{error_messages}",
         }
-        return_message, _ = dispatcher.execute_task(message_info, llm_models, format_json=True)
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
         html_string = return_message["html_string"]
         is_valid, error_messages = validate_html(html_string, allowed_tags)
     return html_string
