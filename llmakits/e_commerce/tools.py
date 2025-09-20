@@ -1,5 +1,4 @@
-import re
-from .html_validator import check_allowed_tags, check_tag_closing
+from .validators.html_validator import check_allowed_tags, check_tag_closing
 
 
 # 程序化缩减标题

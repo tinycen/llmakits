@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 from .tools import shorten_title, validate_html
-from .string_validator import contains_chinese
+from .validators.string_validator import contains_chinese
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
 
