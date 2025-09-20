@@ -82,6 +82,7 @@ def validate_html(html_string: str, allowed_tags: set[str]):
     return True, ""
 
 
+# 检查HTML标签是否闭合
 def check_tag_closing(html_string: str):
     """
     检查HTML字符串中的标签是否正确闭合。
