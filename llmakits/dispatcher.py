@@ -21,6 +21,23 @@ class ModelDispatcher:
             self.model_groups = {}
             self.model_keys = {}
 
+    def _remove_exhausted_model(self, sdk_name: str, model_name: str):
+        """
+        从模型组中删除API密钥用尽的模型
+
+        Args:
+            sdk_name: 模型的SDK名称
+            model_name: 模型的名称
+        """
+        # 从当前列表中删除匹配的模型
+        for group_name, group_models in self.model_groups.items():
+            new_group_models = []
+            for model in group_models:
+                if model['sdk_name'] != sdk_name or model['model_name'] != model_name:
+                    new_group_models.append(model)
+            self.model_groups[group_name] = new_group_models
+        return
+
     def execute_task(
         self,
         message_info: Dict[str, Any],
@@ -43,9 +60,9 @@ class ModelDispatcher:
         models_num = len(llm_models)
 
         for idx, model_info in enumerate(llm_models):
-            base_model_info = (
-                f"{idx+1}/{models_num} Model {model_info['sdk_name']} : {model_info.get('model_name', 'unknown_model')}"
-            )
+            sdk_name = model_info.get('sdk_name', 'unknown_sdk')
+            model_name = model_info.get('model_name', 'unknown_model')
+            base_model_info = f"{idx+1}/{models_num} Model {sdk_name} : {model_name}"
             try:
                 return_message, total_tokens = model_info["model"].send_message([], message_info)
                 if format_json:
@@ -62,6 +79,13 @@ class ModelDispatcher:
 
             except Exception as e:
                 print(base_model_info)
+
+                # 检查是否是API密钥用尽异常
+                if str(e) == 'API_KEY_EXHAUSTED':
+                    print(f"模型 {sdk_name} - {model_name} API密钥 已用完")
+                    # 从模型组中删除该模型
+                    self._remove_exhausted_model(sdk_name, model_name)
+
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
                     self.model_switch_count += 1
@@ -72,7 +96,7 @@ class ModelDispatcher:
         # 如果所有模型都失败
         raise Exception("All models failed.")
 
-    def execute_task_with_internal_models(
+    def execute_task_with_group_models(
         self,
         message_info: Dict[str, Any],
         group_name: str,
@@ -104,6 +128,5 @@ class ModelDispatcher:
         if not llm_models:
             raise Exception(f"未找到模型组: {group_name}")
 
-        # 使用现有的execute_task方法
-        # 注意：模型内部的send_message方法会自动处理API密钥切换
+        # 使用现有的execute_task方法，传入group_name以便在API密钥用尽时删除模型
         return self.execute_task(message_info, llm_models, format_json, validate_func)
