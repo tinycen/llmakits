@@ -8,10 +8,12 @@
 - 🔄 **智能调度**: 内置模型故障转移和负载均衡机制；
   - 自动切换：当模型失败时，自动切换到下个可用模型；
   - 负载均衡：Token 或 请求次数 达到上限后，自动切换到下个api_key；
+  - API密钥用尽处理：自动检测并移除API密钥用尽的模型；
 - 📊 **消息处理**: 强大的消息格式化、验证和提取功能；
 - 🛡️ **错误处理**: 完善的重试机制和异常处理；
 - 📝 **流式输出**: 支持流式响应处理；
-- 🎯 **电商工具**: 内置电商场景专用工具集。
+- 🎯 **电商工具**: 内置电商场景专用工具集；
+- 💡 **状态保持**: 模型实例缓存，避免重复实例化，保持API密钥切换状态。
 
 ## 安装/更新
 
@@ -50,6 +52,36 @@ platform_name:
     - "api-key-2"
 ```
 
+### 配置说明
+
+**模型配置文件** (`config/models_config.yaml`):
+
+- 支持按业务场景分组配置模型
+- 每个组可以配置多个模型，实现故障转移
+- 模型会按配置顺序依次尝试，直到成功
+
+**密钥配置文件** (`config/keys_config.yaml`):
+
+- 支持多密钥配置，自动负载均衡
+- 当密钥达到使用限制时，自动切换到下一个密钥
+- 支持不同平台的独立配置
+
+### 错误处理和故障转移
+
+ModelDispatcher 提供了完善的错误处理机制：
+
+1. **模型级别故障转移**: 当前模型失败时，自动切换到同组的下一个模型
+2. **API密钥用尽检测**: 自动检测 `API_KEY_EXHAUSTED` 异常，并移除对应的模型
+3. **结果验证**: 支持自定义验证函数，验证失败时自动尝试下一个模型
+4. **状态保持**: 模型实例在dispatcher中缓存，保持API密钥切换状态
+
+### 性能优化建议
+
+1. **使用模型组**: 推荐使用 `execute_with_group` 方法，避免重复实例化
+2. **合理配置模型顺序**: 将性能更好、更稳定的模型放在前面
+3. **适当设置重试**: 根据业务需求配置模型数量和密钥数量
+4. **监控切换次数**: 通过 `model_switch_count` 监控模型切换频率
+
 ### 2. 加载模型
 
 ```python
@@ -64,7 +96,58 @@ my_models = models['my_models']
 
 ### 3. 发送消息（多模型调度）
 
-#### 使用新的 ModelDispatcher 类（推荐）
+#### 使用 ModelDispatcher（推荐）
+
+ModelDispatcher 提供了两种使用方式，推荐使用 `execute_with_group` 方法：
+
+**方式一：使用模型组（推荐）**
+
+```python
+from llmakits.dispatcher import ModelDispatcher
+
+# 创建调度器实例并加载配置
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 准备消息
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言"
+}
+
+# 使用模型组执行任务 - 自动管理模型状态和故障转移
+result, tokens = dispatcher.execute_with_group(message_info, group_name="generate_title")
+print(f"结果: {result}")
+print(f"使用token数: {tokens}")
+print(f"模型切换次数: {dispatcher.model_switch_count}")
+```
+
+#### 消息格式说明
+
+`message_info` 参数支持以下字段：
+- `system_prompt`: 系统提示词（可选）
+- `user_text`: 用户输入文本（可选）
+- `include_img`: 是否包含图片（可选，默认False）
+- `img_list`: 图片URL列表（可选，默认为空列表）
+
+基本使用示例：
+
+```python
+# 简单文本对话
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言"
+}
+
+# 带图片的对话
+message_info = {
+    "system_prompt": "你是一个图像分析专家",
+    "user_text": "请分析这张图片",
+    "include_img": True,
+    "img_list": ["https://example.com/image.jpg"]
+}
+```
+
+**方式二：手动传入模型列表**
 
 ```python
 from llmakits.dispatcher import ModelDispatcher
@@ -72,39 +155,45 @@ from llmakits.dispatcher import ModelDispatcher
 # 创建调度器实例
 dispatcher = ModelDispatcher()
 
-# 准备消息
+# 准备消息和模型列表
 message_info = {
-    "system": "你是一个 helpful 助手",
-    "user": "请介绍一下Python编程语言"
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言"
 }
 
 # 执行任务
 result, tokens = dispatcher.execute_task(message_info, my_models)
-print(f"结果: {result}")
-print(f"使用token数: {tokens}")
-
-# 获取模型切换次数
-switch_count = dispatcher.model_switch_count
-print(f"模型切换次数: {switch_count}")
-
 ```
 
-#### 使用兼容函数（旧版本）
+#### 高级用法：结果验证和格式化
 
 ```python
-from llmakits.dispatcher import execute_task
+from llmakits.dispatcher import ModelDispatcher
+
+# 创建调度器
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 定义结果验证函数
+def validate_result(result):
+    """验证结果是否包含必要的字段"""
+    return "python" in result.lower() and "编程" in result
 
 # 准备消息
 message_info = {
-    "system": "你是一个 helpful 助手",
-    "user": "请介绍一下Python编程语言"
+    "system_prompt": "你是一个编程专家",
+    "user_text": "请介绍Python语言的特点"
 }
 
-# 执行任务
-result, tokens, switch_count = execute_task(message_info, my_models)
-print(f"结果: {result}")
+# 执行任务，启用JSON格式化和结果验证
+result, tokens = dispatcher.execute_with_group(
+    message_info,
+    group_name="generate_title",
+    format_json=True,           # 格式化为JSON
+    validate_func=validate_result  # 验证结果
+)
+
+print(f"验证通过的结果: {result}")
 print(f"使用token数: {tokens}")
-print(f"模型切换次数: {switch_count}")
 ```
 
 ### 4. 直接使用模型客户端
@@ -120,13 +209,20 @@ model = BaseOpenai(
     model_name="gpt-3.5-turbo"
 )
 
-# 发送消息
+# 方法1: 使用消息列表格式（兼容OpenAI格式）
 messages = [
     {"role": "system", "content": "你是一个 helpful 助手"},
     {"role": "user", "content": "Hello!"}
 ]
-
 result, tokens = model.send_message(messages)
+print(f"回复: {result}")
+
+# 方法2: 使用message_info格式（推荐）
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "Hello!"
+}
+result, tokens = model.send_message([], message_info)
 print(f"回复: {result}")
 ```
 
@@ -173,19 +269,21 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 
 #### 高级电商功能
 
+电商工具函数现在支持使用模型组名称，更加简洁：
+
 ```python
 from llmakits.dispatcher import ModelDispatcher
 from llmakits.e_commerce.kit import generate_title, predict_category, translate_options, validate_html_fix
 
-# 创建调度器
-dispatcher = ModelDispatcher()
+# 创建调度器 - 加载配置
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
 
 # 生成优化商品标题
 system_prompt = "你是一个电商标题优化专家"
 title = generate_title(
     dispatcher=dispatcher,
     title="原始商品标题",
-    llm_models=my_models,
+    group_name="generate_title",  # 使用模型组名称
     system_prompt=system_prompt,
     max_length=225,
     min_length=10
@@ -198,7 +296,7 @@ categories = predict_category(
     title="商品标题",
     cat_tree=cat_tree,
     system_prompt="预测商品类目",
-    llm_models=my_models
+    group_name="generate_title"  # 使用模型组名称
 )
 
 # 翻译商品选项
@@ -208,7 +306,7 @@ translated = translate_options(
     title="商品标题",
     options=options,
     to_lang="english",
-    llm_models=my_models,
+    group_name="translate_box",  # 使用模型组名称
     system_prompt="翻译商品选项"
 )
 
@@ -219,7 +317,7 @@ fixed_html = validate_html_fix(
     dispatcher=dispatcher,
     html_string=html_content,
     allowed_tags=allowed_tags,
-    llm_models=my_models,
+    group_name="generate_title",  # 使用模型组名称
     prompt="修复HTML中的不允许标签"
 )
 ```

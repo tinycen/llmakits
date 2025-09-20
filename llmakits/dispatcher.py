@@ -49,7 +49,8 @@ class ModelDispatcher:
         执行任务 - 多模型调度器支持故障转移和重试
 
         Args:
-            message_info: 消息配置信息
+            message_info:
+                { "system_prompt": "", "user_text": "", "include_img": False, "img_list": [] }
             llm_models: LLM模型列表，每个元素包含model、sdk_name等
             format_json: 是否格式化为JSON
             validate_func: 结果验证函数
@@ -112,7 +113,8 @@ class ModelDispatcher:
         3. 多次调用不会丢失已切换的密钥状态
 
         Args:
-            message_info: 消息配置信息
+            message_info:
+                { "system_prompt": "", "user_text": "", "include_img": False, "img_list": [] }
             group_name: 模型组名称
             format_json: 是否格式化为JSON
             validate_func: 结果验证函数
