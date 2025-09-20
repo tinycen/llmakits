@@ -71,3 +71,39 @@ class ModelDispatcher:
 
         # 如果所有模型都失败
         raise Exception("All models failed.")
+
+    def execute_task_with_internal_models(
+        self,
+        message_info: Dict[str, Any],
+        group_name: str,
+        format_json: bool = False,
+        validate_func: Optional[Callable[[str], bool]] = None,
+    ) -> tuple[Any, int]:
+        """
+        使用内部model_groups执行任务，避免重复实例化导致的状态丢失
+
+        这是推荐的使用方式，因为：
+        1. 模型实例在dispatcher中缓存，避免重复实例化
+        2. 模型内部的API密钥切换状态会保持（同一个对象引用）
+        3. 多次调用不会丢失已切换的密钥状态
+
+        Args:
+            message_info: 消息配置信息
+            group_name: 模型组名称
+            format_json: 是否格式化为JSON
+            validate_func: 结果验证函数
+
+        Returns:
+            (返回消息, token总数)
+        """
+        if not self.model_groups:
+            raise Exception("没有可用的模型组，请先初始化dispatcher")
+
+        # 获取模型列表（这些是缓存的模型实例，保持API密钥切换状态）
+        llm_models = self.model_groups[group_name]
+        if not llm_models:
+            raise Exception(f"未找到模型组: {group_name}")
+
+        # 使用现有的execute_task方法
+        # 注意：模型内部的send_message方法会自动处理API密钥切换
+        return self.execute_task(message_info, llm_models, format_json, validate_func)
