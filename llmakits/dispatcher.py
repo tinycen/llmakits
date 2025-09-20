@@ -96,7 +96,7 @@ class ModelDispatcher:
         # 如果所有模型都失败
         raise Exception("All models failed.")
 
-    def execute_task_with_group_models(
+    def execute_with_group(
         self,
         message_info: Dict[str, Any],
         group_name: str,
