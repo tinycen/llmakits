@@ -53,6 +53,40 @@ def validate_html(html_string: str, allowed_tags: set[str]):
                如果校验失败，返回(False, 错误描述字符串)
     """
 
+    # 构建错误信息
+    error_messages = []
+
+    # 检查标签是否被允许（仅当 allowed_tags 不为空时）
+    if allowed_tags:
+        unallowed_tags = check_allowed_tags(html_string, allowed_tags)
+        if unallowed_tags:
+            error_messages.append(f"发现未被允许的标签: {', '.join(sorted(unallowed_tags))}")
+
+    # 检查标签闭合情况
+    unclosed_tags = check_tag_closing(html_string)
+
+    if unclosed_tags:
+        error_messages.append(f"发现未正确闭合的标签: {', '.join(sorted(unclosed_tags))}")
+
+    # 返回结果
+    if error_messages:
+        return False, '; '.join(error_messages)
+
+    return True, ""
+
+
+# 检查HTML标签是否被允许
+def check_allowed_tags(html_string: str, allowed_tags: set[str]):
+    """
+    检查HTML字符串中的标签是否都在允许的标签列表中。
+
+    Args:
+        html_string: 要检查的HTML字符串
+        allowed_tags: 允许使用的标签集合
+
+    Returns:
+        set: 未被允许的标签名集合
+    """
     # 查找所有HTML标签 (包括开始标签、结束标签和自闭合标签)
     # 这个正则表达式会匹配 <tag ...> 或 </tag> 或 <tag ... />
     found_tags = re.findall(r'<\s*/?([a-zA-Z]+)[^>]*>', html_string)
@@ -63,23 +97,7 @@ def validate_html(html_string: str, allowed_tags: set[str]):
     # 检查所有找到的标签是否都在允许的列表中
     unallowed_tags = found_tag_names - allowed_tags
 
-    # 检查标签闭合情况
-    unclosed_tags = check_tag_closing(html_string)
-
-    # 构建错误信息
-    error_messages = []
-
-    if unallowed_tags:
-        error_messages.append(f"发现未被允许的标签: {', '.join(sorted(unallowed_tags))}")
-
-    if unclosed_tags:
-        error_messages.append(f"发现未正确闭合的标签: {', '.join(sorted(unclosed_tags))}")
-
-    # 返回结果
-    if error_messages:
-        return False, '; '.join(error_messages)
-
-    return True, ""
+    return unallowed_tags
 
 
 # 检查HTML标签是否闭合
