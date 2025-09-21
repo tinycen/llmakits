@@ -31,10 +31,11 @@ def validate_dict(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) 
             return {key_1: item.get(key_1), key_2: item.get(key_2)}
 
     # 两种查找方式都未找到匹配项
-    raise KeyError(f"未找到匹配项: {search_data}")
+    print(f"未找到匹配项: {search_data}")
+    return {}
 
 
-def validate_string(item_list: List[str], search_value: str) -> str:
+def validate_string(item_list: List[str], search_value: str):
     """
     验证并查找指定字符串是否存在于字符串列表中
 
@@ -47,4 +48,5 @@ def validate_string(item_list: List[str], search_value: str) -> str:
         return search_value
 
     # 未找到匹配项
-    raise KeyError(f"未找到匹配项: {search_value}")
+    print(f"未找到匹配项: {search_value}")
+    return None

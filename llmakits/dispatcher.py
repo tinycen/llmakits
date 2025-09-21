@@ -70,11 +70,13 @@ class ModelDispatcher:
                     return_message = convert_to_json(return_message)
 
                 # 如果有校验函数，校验不通过则继续下一个模型
-                if validate_func is not None and not validate_func(return_message):
-                    print(base_model_info)
-                    print("输出结果：条件校验失败, trying next model ...")
-                    self.model_switch_count += 1
-                    continue
+                if validate_func is not None:
+                    validate_result = validate_func(return_message)
+                    if not validate_result:
+                        print(base_model_info)
+                        print("输出结果：条件校验失败, trying next model ...")
+                        self.model_switch_count += 1
+                        continue
 
                 return return_message, total_tokens
 
