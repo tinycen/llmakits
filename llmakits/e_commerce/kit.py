@@ -84,13 +84,14 @@ def translate_options(
         """
         说明：validate_func 作为闭包引用了外部的 options 变量，
         即使 send_message 只传递 return_message 参数，这里依然可以访问 options。
+        返回：(验证是否通过, 验证通过的值)
         """
         translated_options = extract_field(return_message, "options")
         # 只有长度相等，且不存在重复值，才算验证通过
         if len(options) == len(translated_options) == len(set(translated_options)):
-            return True
+            return True, translated_options
         else:
-            return False
+            return False, None
 
     return_message, _ = dispatcher.execute_with_group(
         {"user_text": user_text, "system_prompt": system_prompt},
@@ -98,5 +99,5 @@ def translate_options(
         format_json=True,
         validate_func=validate_func,
     )
-    extracted_options = extract_field(return_message, "options")
-    return extracted_options
+    # 由于validate_func返回验证通过的值，这里直接使用return_message
+    return return_message

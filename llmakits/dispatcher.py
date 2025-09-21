@@ -71,8 +71,13 @@ class ModelDispatcher:
 
                 # 如果有校验函数，校验不通过则继续下一个模型
                 if validate_func is not None:
-                    validate_result = validate_func(return_message)
-                    if not validate_result:
+                    is_valid, validated_value = validate_func(return_message)
+                    # 如果validate_func返回的是元组，解包处理
+                    if is_valid:
+                        if validated_value:
+                            # 验证通过，直接返回验证通过的值
+                            return validated_value, total_tokens
+                    else:
                         print(base_model_info)
                         print("输出结果：条件校验失败, trying next model ...")
                         self.model_switch_count += 1
