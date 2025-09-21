@@ -256,7 +256,7 @@ print(age)  # 输出: None
 #### 基础工具函数
 
 ```python
-from llmakits.e_commerce import contains_chinese, remove_chinese, shorten_title, validate_html
+from llmakits.e_commerce import contains_chinese, remove_chinese, shorten_title, validate_html, generate_html
 
 # 使用简单函数
 result = contains_chinese("智能手机")  # 返回 True
@@ -322,6 +322,24 @@ fixed_html = validate_html_fix(
     allowed_tags=allowed_tags,
     group_name="generate_title",  # 使用模型组名称
     system_prompt="修复HTML中的不允许标签"
+)
+
+# 生成HTML商品描述（并自动修复错误）
+product_info = """
+产品名称：智能手表
+特点：防水、心率监测、GPS定位
+材质：不锈钢表带，强化玻璃表面
+适用场景：运动、日常佩戴
+"""
+
+html_description = generate_html(
+    dispatcher=dispatcher,
+    product_info=product_info,
+    generate_prompt="你是一个电商产品描述专家，请根据产品信息生成美观的HTML格式描述，包含标题、段落、列表等结构",
+    fix_prompt="修复HTML中的不允许标签，确保HTML格式正确",
+    generate_group_name="generate_title",  # 生成HTML使用的模型组
+    fix_group_name="generate_title",       # 修复HTML使用的模型组
+    allowed_tags={'div', 'p', 'h1', 'h2', 'h3', 'ul', 'li', 'strong', 'em', 'span', 'br'}
 )
 ```
 
