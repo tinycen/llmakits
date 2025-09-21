@@ -21,8 +21,9 @@ def check_title(title: str, max_length: int, min_length: int = 10, min_word: int
 def generate_title(
     dispatcher: ModelDispatcher,
     title: str,
-    group_name: str,
+    product_info: str,
     system_prompt: str,
+    group_name: str,
     max_length: int = 225,
     min_length: int = 10,
     min_word: int = 2,
@@ -33,6 +34,7 @@ def generate_title(
 
     :param dispatcher: 模型调度器
     :param title: 原始标题
+    :param product_info: 商品信息
     :param group_name: 模型组名称
     :param system_prompt: 系统提示语
     :param max_length: 最大允许长度
@@ -43,11 +45,14 @@ def generate_title(
     """
     print("检测商品标题……")
 
-    if check_title(title, max_length, min_length, min_word):
+    if title and check_title(title, max_length, min_length, min_word):
         return title
 
     def build_message_info(cur_title, title_length):
-        user_text = f"title:{cur_title},长度={title_length}不合格，请你修改，长度范围为{min_length}~{max_length}。"
+        if cur_title == "":
+            user_text = product_info
+        else:
+            user_text = f"title:{cur_title},长度={title_length}不合格，请你修改，长度范围为{min_length}~{max_length}。"
         return {"system_prompt": system_prompt, "user_text": user_text}
 
     best_title = title
