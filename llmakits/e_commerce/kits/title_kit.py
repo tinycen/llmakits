@@ -47,7 +47,7 @@ def generate_title(
         return title
 
     def build_message_info(cur_title, title_length):
-        user_text = f"title:{cur_title},长度={title_length}不合格，请你修改。"
+        user_text = f"title:{cur_title},长度={title_length}不合格，请你修改，长度范围为{min_length}~{max_length}。"
         return {"system_prompt": system_prompt, "user_text": user_text}
 
     best_title = title
