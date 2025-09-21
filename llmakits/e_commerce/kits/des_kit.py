@@ -1,0 +1,29 @@
+from llmakits.dispatcher import ModelDispatcher
+from llmakits.e_commerce import validate_html_fix
+
+
+def generate_html(
+    dispatcher: ModelDispatcher,
+    product_info: str,
+    generate_prompt: str,
+    fix_prompt: str,
+    generate_group_name: str,
+    fix_group_name: str,
+    allowed_tags: set[str],
+) -> str:
+    """
+    生成HTML字符串
+    :param dispatcher: 模型调度器
+    :param product_info: 产品信息
+    :param generate_prompt: 生成HTML提示词
+    :param fix_prompt: 修复HTML提示词
+    :param generate_group_name: 生成模型组名
+    :param fix_group_name: 修复模型组名
+    :param allowed_tags: 允许的HTML标签集合
+    :return: 生成的HTML字符串
+    """
+    message_info = {"system_prompt": generate_prompt, "user_text": product_info}
+    result, _ = dispatcher.execute_with_group(message_info, generate_group_name, format_json=True)
+    html_string = result["html"]
+    des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group_name, fix_prompt)
+    return des_html

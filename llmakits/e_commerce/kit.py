@@ -1,5 +1,4 @@
 from typing import Any, Dict, List, Optional, Union
-from .tools import validate_html
 from .validators.string_validator import contains_chinese
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
@@ -132,25 +131,3 @@ def translate_options(
     )
     extracted_options = extract_field(return_message, "options")
     return extracted_options
-
-
-# 验证HTML并修复
-def validate_html_fix(
-    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], group_name: str, prompt: str
-):
-    """
-    校验HTML字符串是否合规，并修复不允许的标签。
-    """
-    is_valid, error_messages = validate_html(html_string, allowed_tags)
-    fixed_num = 0
-    max_attempts = 5
-    while not is_valid and fixed_num < max_attempts:
-        fixed_num += 1
-        message_info = {
-            "system_prompt": prompt,
-            "user_text": f"allowed_tags:{allowed_tags},html:{html_string},error_messages:{error_messages}",
-        }
-        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
-        html_string = return_message["html"]
-        is_valid, error_messages = validate_html(html_string, allowed_tags)
-    return html_string

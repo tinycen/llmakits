@@ -1,4 +1,28 @@
 import re
+from llmakits.dispatcher import ModelDispatcher
+
+
+def validate_html_fix(
+    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], group_name: str, system_prompt: str
+):
+    """
+    校验HTML字符串是否合规，并修复不允许的标签。
+    """
+    from ..tools import validate_html
+
+    is_valid, error_messages = validate_html(html_string, allowed_tags)
+    fixed_num = 0
+    max_attempts = 5
+    while not is_valid and fixed_num < max_attempts:
+        fixed_num += 1
+        message_info = {
+            "system_prompt": system_prompt,
+            "user_text": f"allowed_tags:{allowed_tags},html:{html_string},error_messages:{error_messages}",
+        }
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
+        html_string = return_message["html"]
+        is_valid, error_messages = validate_html(html_string, allowed_tags)
+    return html_string
 
 
 def check_allowed_tags(html_string: str, allowed_tags: set[str]):

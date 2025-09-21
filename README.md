@@ -273,7 +273,7 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 
 ```python
 from llmakits.dispatcher import ModelDispatcher
-from llmakits.e_commerce.kit import generate_title, predict_category, translate_options, validate_html_fix
+from llmakits.e_commerce import generate_title, predict_category, translate_options, validate_html_fix
 
 # 创建调度器 - 加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -321,7 +321,7 @@ fixed_html = validate_html_fix(
     html_string=html_content,
     allowed_tags=allowed_tags,
     group_name="generate_title",  # 使用模型组名称
-    prompt="修复HTML中的不允许标签"
+    system_prompt="修复HTML中的不允许标签"
 )
 ```
 
