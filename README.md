@@ -341,6 +341,28 @@ html_description = generate_html(
     fix_group="fix_html",       # 修复HTML使用的模型组
     allowed_tags={'div', 'p', 'h1', 'h2', 'h3', 'ul', 'li', 'strong', 'em', 'span', 'br'}
 )
+
+# 填充属性值
+from llmakits.e_commerce.kits.attribute_kit import fill_attr
+
+# 准备消息信息
+message_info = {
+    "system_prompt": "你是一个商品属性填充专家，请根据商品信息填充相应的属性值",
+    "user_text": "请为智能手表填充颜色属性"
+}
+
+# 定义可选项列表
+color_choices = ["黑色", "白色", "蓝色", "红色", "粉色", "金色", "银色"]
+
+# 使用fill_attr函数填充属性
+filled_result = fill_attr(
+    dispatcher=dispatcher,
+    message_info=message_info,
+    group="generate_title",  # 使用模型组名称
+    choices=color_choices    # 可选值列表，用于验证结果
+)
+
+print(f"填充的属性结果: {filled_result}")
 ```
 
 ## 许可证
