@@ -3,7 +3,7 @@
 负责多模型故障转移和负载均衡
 """
 
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable, Union
 from llmakits.message import convert_to_json
 from llmakits.load_model import load_models
 
@@ -43,7 +43,7 @@ class ModelDispatcher:
         message_info: Dict[str, Any],
         llm_models: List[Dict[str, Any]],
         format_json: bool = False,
-        validate_func: Optional[Callable[[str], bool]] = None,
+        validate_func: Optional[Callable[[str], Union[bool, tuple[bool, Any]]]] = None,
     ) -> tuple[Any, int]:
         """
         执行任务 - 多模型调度器支持故障转移和重试
@@ -53,7 +53,9 @@ class ModelDispatcher:
                 { "system_prompt": "", "user_text": "", "include_img": False, "img_list": [] }
             llm_models: LLM模型列表，每个元素包含model、sdk_name等
             format_json: 是否格式化为JSON
-            validate_func: 结果验证函数
+            validate_func: 结果验证函数，可返回bool或tuple[bool, Any]。
+                        返回bool时：True表示验证通过，False表示验证失败
+                        返回tuple时：(是否验证通过, 验证通过的值)，验证通过时直接返回第二个值
 
         Returns:
             (返回消息, token总数)
@@ -72,7 +74,7 @@ class ModelDispatcher:
                 # 如果有校验函数，校验不通过则继续下一个模型
                 if validate_func is not None:
                     is_valid, validated_value = validate_func(return_message)
-                    # 如果validate_func返回的是元组，解包处理
+
                     if is_valid:
                         if validated_value:
                             # 验证通过，直接返回验证通过的值
@@ -109,7 +111,7 @@ class ModelDispatcher:
         message_info: Dict[str, Any],
         group_name: str,
         format_json: bool = False,
-        validate_func: Optional[Callable[[str], bool]] = None,
+        validate_func: Optional[Callable[[str], Union[bool, tuple[bool, Any]]]] = None,
     ) -> tuple[Any, int]:
         """
         使用内部model_groups执行任务，避免重复实例化导致的状态丢失
