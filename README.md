@@ -273,7 +273,7 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 
 ```python
 from llmakits.dispatcher import ModelDispatcher
-from llmakits.e_commerce import generate_title, predict_category, translate_options, validate_html_fix
+from llmakits.e_commerce import generate_title, predict_category, translate_options, validate_html_fix, generate_html
 
 # 创建调度器 - 加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -337,8 +337,8 @@ html_description = generate_html(
     product_info=product_info,
     generate_prompt="你是一个电商产品描述专家，请根据产品信息生成美观的HTML格式描述，包含标题、段落、列表等结构",
     fix_prompt="修复HTML中的不允许标签，确保HTML格式正确",
-    generate_group_name="generate_title",  # 生成HTML使用的模型组
-    fix_group_name="generate_title",       # 修复HTML使用的模型组
+    generate_group="generate_html",  # 生成HTML使用的模型组
+    fix_group="fix_html",       # 修复HTML使用的模型组
     allowed_tags={'div', 'p', 'h1', 'h2', 'h3', 'ul', 'li', 'strong', 'em', 'span', 'br'}
 )
 ```

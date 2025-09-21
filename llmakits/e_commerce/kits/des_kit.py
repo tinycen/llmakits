@@ -7,8 +7,8 @@ def generate_html(
     product_info: str,
     generate_prompt: str,
     fix_prompt: str,
-    generate_group_name: str,
-    fix_group_name: str,
+    generate_group: str,
+    fix_group: str,
     allowed_tags: set[str],
 ) -> str:
     """
@@ -17,13 +17,13 @@ def generate_html(
     :param product_info: 产品信息
     :param generate_prompt: 生成HTML提示词
     :param fix_prompt: 修复HTML提示词
-    :param generate_group_name: 生成模型组名
-    :param fix_group_name: 修复模型组名
+    :param generate_group: 生成模型组名
+    :param fix_group: 修复模型组名
     :param allowed_tags: 允许的HTML标签集合
     :return: 生成的HTML字符串
     """
     message_info = {"system_prompt": generate_prompt, "user_text": product_info}
-    result, _ = dispatcher.execute_with_group(message_info, generate_group_name, format_json=True)
+    result, _ = dispatcher.execute_with_group(message_info, generate_group, format_json=True)
     html_string = result["html"]
-    des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group_name, fix_prompt)
+    des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group, fix_prompt)
     return des_html
