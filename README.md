@@ -261,7 +261,7 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 电商工具函数现在支持使用模型组名称，更加简洁：
 
 ```python
-from llmakits.e_commerce import generate_title, generate_html, fill_attr,predict_category, translate_options, validate_html_fix
+from llmakits.e_commerce import generate_title, generate_html, fill_attr,predict_category, translate_options
 
 # 创建调度器 - 加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -301,16 +301,6 @@ translated = translate_options(
     system_prompt="翻译商品选项"
 )
 
-# 验证并修复HTML
-html_content = "<div>内容</div><script>alert('test')</script>"
-allowed_tags = {'div', 'p', 'span'}
-fixed_html = validate_html_fix(
-    dispatcher=dispatcher,
-    html_string=html_content,
-    allowed_tags=allowed_tags,
-    group_name="generate_title",  # 使用模型组名称
-    system_prompt="修复HTML中的不允许标签"
-)
 
 # 生成HTML商品描述（自动修复错误）
 product_info = """

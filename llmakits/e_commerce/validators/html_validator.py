@@ -2,29 +2,6 @@ import re
 from llmakits.dispatcher import ModelDispatcher
 
 
-def validate_html_fix(
-    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], group_name: str, system_prompt: str
-):
-    """
-    校验HTML字符串是否合规，并修复不允许的标签。
-    """
-    from ..tools import validate_html
-
-    is_valid, error_messages = validate_html(html_string, allowed_tags)
-    fixed_num = 0
-    max_attempts = 5
-    while not is_valid and fixed_num < max_attempts:
-        fixed_num += 1
-        message_info = {
-            "system_prompt": system_prompt,
-            "user_text": f"allowed_tags:{allowed_tags},html:{html_string},error_messages:{error_messages}",
-        }
-        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
-        html_string = return_message["html"]
-        is_valid, error_messages = validate_html(html_string, allowed_tags)
-    return html_string
-
-
 def check_allowed_tags(html_string: str, allowed_tags: set[str]):
     """
     检查HTML字符串中的标签是否都在允许的标签列表中。
@@ -102,3 +79,61 @@ def check_tag_closing(html_string: str):
     # 栈中剩余的标签都是未闭合的
     unclosed_tags.update(tag_stack)
     return unclosed_tags
+
+
+def validate_html(html_string: str, allowed_tags: set[str]):
+    """
+    校验HTML字符串是否仅包含指定的标签，并检查标签是否正确闭合。
+
+    Args:
+        html_string: 要校验的HTML字符串
+        allowed_tags: 允许使用的标签集合
+
+    Returns:
+        tuple: (是否校验通过, 错误信息)
+               如果校验通过，返回(True, "")
+               如果校验失败，返回(False, 错误描述字符串)
+    """
+
+    # 构建错误信息
+    error_messages = []
+
+    # 检查标签是否被允许（仅当 allowed_tags 不为空时）
+    if allowed_tags:
+        unallowed_tags = check_allowed_tags(html_string, allowed_tags)
+        if unallowed_tags:
+            error_messages.append(f"发现未被允许的标签: {', '.join(sorted(unallowed_tags))}")
+
+    # 检查标签闭合情况
+    unclosed_tags = check_tag_closing(html_string)
+
+    if unclosed_tags:
+        error_messages.append(f"发现未正确闭合的标签: {', '.join(sorted(unclosed_tags))}")
+
+    # 返回结果
+    if error_messages:
+        print(error_messages)
+        return False, '; '.join(error_messages)
+
+    return True, ""
+
+
+def validate_html_fix(
+    dispatcher: ModelDispatcher, html_string: str, allowed_tags: set[str], group_name: str, system_prompt: str
+):
+    """
+    校验HTML字符串是否合规，并修复不允许的标签。
+    """
+    is_valid, error_messages = validate_html(html_string, allowed_tags)
+    fixed_num = 0
+    max_attempts = 5
+    while not is_valid and fixed_num < max_attempts:
+        fixed_num += 1
+        message_info = {
+            "system_prompt": system_prompt,
+            "user_text": f"allowed_tags:{allowed_tags},html:{html_string},error_messages:{error_messages}",
+        }
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
+        html_string = return_message["html"]
+        is_valid, error_messages = validate_html(html_string, allowed_tags)
+    return html_string
