@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 from .validators.string_validator import contains_chinese
+from .validators.value_validator import validate_dict
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
 
@@ -13,38 +14,6 @@ def extr_cat_tree(
 ) -> List[Dict[str, str]]:
     """临时占位函数，需要替换为实际的 selectSql 模块实现"""
     return []
-
-
-# 检查 输出的属性参数 是否存在
-def find_value(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    :param item_list: (list[dict]): 要搜索的字典列表，每个字典应包含'id'和'value'键
-    :param search_data: dict, 必须包含 'id' 和 'value' 两个键
-    :return: dict, 匹配到的项，包含 'id' 和 'value'
-    """
-    if not isinstance(item_list, list) or not all(isinstance(item, dict) for item in item_list):
-        raise TypeError("item_list 必须是字典组成的列表")
-
-    if set(search_data.keys()) != {'id', 'value'}:
-        raise ValueError("search_data 必须且只能包含 'id' 和 'value' 两个键")
-
-    key_1 = 'id'
-    key_2 = 'value'
-    value_1 = search_data[key_1]
-    value_2 = search_data[key_2]
-
-    # 优先通过ID查找
-    for item in item_list:
-        if item.get(key_1) == value_1:
-            return {key_1: item.get(key_1), key_2: item.get(key_2)}
-
-    # ID查找失败后，尝试通过名称查找
-    for item in item_list:
-        if item.get(key_2) == value_2:
-            return {key_1: item.get(key_1), key_2: item.get(key_2)}
-
-    # 两种查找方式都未找到匹配项
-    raise KeyError(f"未找到匹配项: {search_data}")
 
 
 # 预测类目
@@ -82,7 +51,7 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
     for category in return_message:
         if isinstance(category, dict):
             search_data = {"value": category.get("cat_id", ""), "label": category.get("cat_name", "")}
-            value = find_value(category_all, search_data)
+            value = validate_dict(category_all, search_data)
             predict_results.append(value)
     '''  示例响应结果
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'},
