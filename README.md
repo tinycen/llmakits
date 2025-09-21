@@ -25,7 +25,10 @@ pip install --upgrade llmakits
 
 ### 1. 配置模型和API密钥
 
-创建配置文件 `config/models_config.yaml`：
+**模型配置文件** (`config/models_config.yaml`):
+- 支持按业务场景分组配置
+- 每个组可以配置多个模型，实现故障转移
+- 模型会按配置顺序依次尝试，直到成功
 
 ```yaml
 Models_config:
@@ -40,9 +43,10 @@ Models_config:
       model_name: "Qwen/Qwen3-32B"
 ```
 
-创建配置文件 `config/keys_config.yaml`：
-
-支持多密钥配置，自动切换和负载均衡：
+**密钥配置文件** (`config/keys_config.yaml`):
+- 支持多密钥配置，自动负载均衡
+- 当密钥达到每日使用限制时，自动切换到下一个密钥
+- 支持不同平台的独立配置
 
 ```yaml
 platform_name:
@@ -52,30 +56,14 @@ platform_name:
     - "api-key-2"
 ```
 
-### 配置说明
-
-**模型配置文件** (`config/models_config.yaml`):
-
-- 支持按业务场景分组配置模型
-- 每个组可以配置多个模型，实现故障转移
-- 模型会按配置顺序依次尝试，直到成功
-
-**密钥配置文件** (`config/keys_config.yaml`):
-
-- 支持多密钥配置，自动负载均衡
-- 当密钥达到使用限制时，自动切换到下一个密钥
-- 支持不同平台的独立配置
-
-### 错误处理和故障转移
-
-ModelDispatcher 提供了完善的错误处理机制：
+#### 错误处理和故障转移
 
 1. **模型级别故障转移**: 当前模型失败时，自动切换到同组的下一个模型
 2. **API密钥用尽检测**: 自动检测 `API_KEY_EXHAUSTED` 异常，并移除对应的模型
 3. **结果验证**: 支持自定义验证函数，验证失败时自动尝试下一个模型
 4. **状态保持**: 模型实例在dispatcher中缓存，保持API密钥切换状态
 
-### 性能优化建议
+#### 配置优化建议
 
 1. **使用模型组**: 推荐使用 `execute_with_group` 方法，避免重复实例化
 2. **合理配置模型顺序**: 将性能更好、更稳定的模型放在前面
@@ -145,6 +133,7 @@ message_info = {
     "include_img": True,
     "img_list": ["https://example.com/image.jpg"]
 }
+# 如果include_img = True 同时 img_list 是空的，此时会报出错误。
 ```
 
 **方式二：手动传入模型列表**
@@ -256,7 +245,7 @@ print(age)  # 输出: None
 #### 基础工具函数
 
 ```python
-from llmakits.e_commerce import contains_chinese, remove_chinese, shorten_title, validate_html, generate_html
+from llmakits.e_commerce import contains_chinese, remove_chinese, shorten_title, validate_html
 
 # 使用简单函数
 result = contains_chinese("智能手机")  # 返回 True
@@ -272,8 +261,7 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 电商工具函数现在支持使用模型组名称，更加简洁：
 
 ```python
-from llmakits.dispatcher import ModelDispatcher
-from llmakits.e_commerce import generate_title, predict_category, translate_options, validate_html_fix, generate_html
+from llmakits.e_commerce import generate_title, generate_html, fill_attr,predict_category, translate_options, validate_html_fix
 
 # 创建调度器 - 加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -324,7 +312,7 @@ fixed_html = validate_html_fix(
     system_prompt="修复HTML中的不允许标签"
 )
 
-# 生成HTML商品描述（并自动修复错误）
+# 生成HTML商品描述（自动修复错误）
 product_info = """
 产品名称：智能手表
 特点：防水、心率监测、GPS定位
@@ -343,7 +331,6 @@ html_description = generate_html(
 )
 
 # 填充属性值
-from llmakits.e_commerce.kits.attribute_kit import fill_attr
 
 # 准备消息信息
 message_info = {
