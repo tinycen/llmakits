@@ -48,11 +48,13 @@ def generate_title(
     if title and check_title(title, max_length, min_length, min_word):
         return title
 
-    def build_message_info(cur_title, title_length):
+    def build_message_info(cur_title, title_length, try_max_length):
         if cur_title == "":
             user_text = product_info
         else:
-            user_text = f"title:{cur_title},长度={title_length}不合格，请你修改，长度范围为{min_length}~{max_length}。"
+            user_text = (
+                f"title:{cur_title},长度={title_length}不合格，请你修改，长度范围为{min_length}~{try_max_length}"
+            )
         return {"system_prompt": system_prompt, "user_text": user_text}
 
     best_title = title
@@ -61,10 +63,12 @@ def generate_title(
         print(f"第 {attempt} 次修改中……")
         title_length = len(best_title)
         if title_length > max_length:
-            max_length -= 5  # 每次尝试减少最大长度限制
+            try_max_length -= 5  # 每次尝试减少最大长度限制
+        else:
+            try_max_length = max_length
 
         return_message, _ = dispatcher.execute_with_group(
-            build_message_info(best_title, title_length), group_name, format_json=True
+            build_message_info(best_title, title_length, try_max_length), group_name, format_json=True
         )
         best_title = extract_field(return_message, "title")
 
