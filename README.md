@@ -286,8 +286,8 @@ title = generate_title(
     product_info="这是一个需要优化的商品，包含详细的产品描述和特点",
     system_prompt=system_prompt,
     group_name="generate_title",  # 使用模型组名称
-    max_length=225,
     min_length=10,
+    max_length=225,
     min_word=2,      # 标题最少包含2个单词
     max_attempts=3   # 最大重试/修改次数
 )

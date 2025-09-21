@@ -24,8 +24,8 @@ def generate_title(
     product_info: str,
     system_prompt: str,
     group_name: str,
-    max_length: int = 225,
     min_length: int = 10,
+    max_length: int = 225,
     min_word: int = 2,
     max_attempts: int = 3,
 ) -> str:
@@ -37,8 +37,8 @@ def generate_title(
     :param product_info: 商品信息
     :param system_prompt: 系统提示语
     :param group_name: 模型组名称
-    :param max_length: 最大允许长度
     :param min_length: 最小允许长度
+    :param max_length: 最大允许长度
     :param min_word: 最少单词数
     :param max_attempts: 最大尝试次数
     :return: 符合要求的标题
