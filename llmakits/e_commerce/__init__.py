@@ -4,6 +4,7 @@ from .validators.string_validator import contains_chinese, remove_chinese
 from .validators.html_validator import validate_html, validate_html_fix
 from .kits.title_kit import check_title, generate_title
 from .kits.des_kit import generate_html
+from .kits.attribute_kit import fill_attr
 
 __all__ = [
     "contains_chinese",
@@ -14,4 +15,5 @@ __all__ = [
     "check_title",
     "generate_title",
     "generate_html",
+    "fill_attr",
 ]
