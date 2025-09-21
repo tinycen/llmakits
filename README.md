@@ -283,10 +283,13 @@ system_prompt = "你是一个电商标题优化专家"
 title = generate_title(
     dispatcher=dispatcher,
     title="原始商品标题",
-    group_name="generate_title",  # 使用模型组名称
+    product_info="这是一个需要优化的商品，包含详细的产品描述和特点",
     system_prompt=system_prompt,
+    group_name="generate_title",  # 使用模型组名称
     max_length=225,
-    min_length=10
+    min_length=10,
+    min_word=2,      # 标题最少包含2个单词
+    max_attempts=3   # 最大重试/修改次数
 )
 
 # 预测商品类目

@@ -35,8 +35,8 @@ def generate_title(
     :param dispatcher: 模型调度器
     :param title: 原始标题
     :param product_info: 商品信息
-    :param group_name: 模型组名称
     :param system_prompt: 系统提示语
+    :param group_name: 模型组名称
     :param max_length: 最大允许长度
     :param min_length: 最小允许长度
     :param min_word: 最少单词数
