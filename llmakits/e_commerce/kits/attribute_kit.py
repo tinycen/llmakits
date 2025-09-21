@@ -1,52 +1,61 @@
 from typing import Optional, Callable, Any, Tuple
 from llmakits.dispatcher import ModelDispatcher
 from llmakits.message import extract_field
-from ..validators.value_validator import validate_dict, validate_string
+from ..validators.value_validator import auto_validate
+
+
+def _create_validate_func(choices: list) -> Callable[[str], Tuple[bool, Any]]:
+    """
+    创建验证函数的通用逻辑，使用auto_validate自动选择验证器
+
+    Args:
+        choices: 可选项列表
+
+    Returns:
+        验证函数
+    """
+
+    def validate_func(return_message: str) -> Tuple[bool, Any]:
+        """
+        验证函数：验证返回值是否符合要求
+
+        Args:
+            return_message: 返回的消息
+
+        Returns:
+            (验证是否通过, 验证通过的值)
+        """
+        values = extract_field(return_message, "values")
+        validated_values = []
+        for value in values:
+            validated_value = auto_validate(choices, value)
+            if not validated_value:
+                return False, None
+            validated_values.append(validated_value)
+        return True, validated_values
+
+    return validate_func
 
 
 def fill_attr(dispatcher: ModelDispatcher, message_info: dict, group: str, choices: list):
+    """
+    填充属性值
+
+    Args:
+        dispatcher: 模型调度器
+        message_info: 消息信息
+        group: 组名
+        choices: 可选项列表
+
+    Returns:
+        执行结果
+    """
+    validate_func: Optional[Callable[[str], Tuple[bool, Any]]] = None
+
     if choices:
-        # 判断 choices 第1个值是 字典 还是 字符串
-        if isinstance(choices[0], dict):
-
-            def validate_dict_func(return_message) -> Tuple[bool, Any]:
-                """
-                说明：validate_func 作为闭包引用了外部的 options 变量，
-                即使 send_message 只传递 return_message 参数，这里依然可以访问 options。
-                返回：(验证是否通过, 验证通过的值)
-                """
-                values = extract_field(return_message, "values")
-                validated_values = []
-                for value in values:
-                    validated_value = validate_dict(choices, value)
-                    if not validated_value:
-                        return False, None
-                    validated_values.append(validated_value)
-                return True, validated_values
-            
-            validate_func = validate_dict_func
-
-        else:
-            # 字符串 类型
-            def validate_string_func(return_message) -> Tuple[bool, Any]:
-                """
-                说明：validate_func 作为闭包引用了外部的 options 变量，
-                即使 send_message 只传递 return_message 参数，这里依然可以访问 options。
-                返回：(验证是否通过, 验证通过的值)
-                """
-                values = extract_field(return_message, "value")
-                validated_values = []
-                for value in values:
-                    validated_value = validate_string(choices, value)
-                    if not validated_value:
-                        return False, None
-                    validated_values.append(validated_value)
-                return True, validated_values
-            
-            validate_func = validate_string_func
-
+        validate_func = _create_validate_func(choices)
     else:
-        validate_func: Optional[Callable[[str], Tuple[bool, Any]]] = None
+        validate_func = None
 
     result, _ = dispatcher.execute_with_group(message_info, group, format_json=True, validate_func=validate_func)
     return result
