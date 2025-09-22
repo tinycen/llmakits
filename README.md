@@ -75,8 +75,22 @@ platform_name:
 ```python
 from llmakits import load_models
 
-# 加载配置好的模型
+# 方式1：传入配置文件路径（字符串）
 models = load_models('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 方式2：直接传入配置字典
+models_config = {
+    "my_models": [
+        {"model_name": "gpt-3.5-turbo", "sdk_name": "openai"}
+    ]
+}
+model_keys = {
+    "openai": {
+        "base_url": "https://api.openai.com/v1",
+        "api_keys": ["your-api-key"]
+    }
+}
+models = load_models(models_config, model_keys)
 
 # 获取模型组
 my_models = models['my_models']
