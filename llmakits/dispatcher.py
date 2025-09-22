@@ -13,10 +13,14 @@ class ModelDispatcher:
     模型调度器类，负责管理模型切换次数和执行任务
     """
 
-    def __init__(self, models_config_path: Optional[str] = None, model_keys_path: Optional[str] = None):
+    def __init__(
+        self,
+        models_config: Optional[Union[str, Dict[str, Any]]] = None,
+        model_keys: Optional[Union[str, Dict[str, Any]]] = None,
+    ):
         self.model_switch_count = 0
-        if models_config_path and model_keys_path:
-            self.model_groups, self.model_keys = load_models(models_config_path, model_keys_path)
+        if models_config and model_keys:
+            self.model_groups, self.model_keys = load_models(models_config, model_keys)
         else:
             self.model_groups = {}
             self.model_keys = {}
