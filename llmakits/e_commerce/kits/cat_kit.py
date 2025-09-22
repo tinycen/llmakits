@@ -11,7 +11,9 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
     - level 2: 只按 level_1_names 过滤
     - level 3: 同时按 level_1_names 和 level_2_names 过滤
 
-    :param cat_tree: 类目树数据，格式为 list[dict]
+    :param cat_tree: 类目树数据，格式为 list[dict],
+        示例：[{"label":……,"value":……,"children":[
+                {"label":……,"value":……,"children":[]} ]}]
     :param level: 提取的层级，可选值为 1, 2, 3
     :param level_1_names: 可选，用于在 level 2 和 3 时过滤特定的 level_1 类目，格式为列表
         示例值： [{"cat_name": "儿童用品"}, {"cat_name": "美容和卫生"}, {"cat_name": "日化"}]
@@ -56,10 +58,12 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
     elif level == 2:
         for level_1_node in cat_tree:
             if level_1_names is None or level_1_node['value'] in level_1_names:
-                for level_2_node in level_1_node.get('children', []):
-                    val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]}"
-                    if val not in result:
-                        result.append(val)
+                children = level_1_node.get('children', [])
+                if children:  # 只有当有子节点时才处理
+                    for level_2_node in children:
+                        val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]}"
+                        if val not in result:
+                            result.append(val)
 
     elif level == 3:
 
@@ -69,22 +73,52 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
                 for level_2_node in level_1_node.get('children', []):
                     # 检查 level_2 是否匹配
                     should_include = level_2_names is None or (
+                        level_1_node['value'] in level_2_filters and 
                         level_2_node['value'] in level_2_filters[level_1_node['value']]
                     )
 
                     if should_include:
-                        for level_3_node in level_2_node.get('children', []):
-                            level_label_3 = level_3_node['label']
-                            val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]} > {level_label_3}"
-                            result.append({cat_keys[0]: level_3_node['value'], cat_keys[1]: val})
+                        # 检查level_2节点是否有children，避免空列表循环
+                        level_3_children = level_2_node.get('children', [])
+                        if level_3_children:  # 只有当有子节点时才处理
+                            for level_3_node in level_3_children:
+                                level_label_3 = level_3_node['label']
+                                val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]} > {level_label_3}"
+                                result.append({cat_keys[0]: level_3_node['value'], cat_keys[1]: val})
 
     return result
+
+
+def get_category_depth(cat_tree: Any) -> int:
+    """检测类目树的最大深度
+    
+    Args:
+        cat_tree: 类目树数据
+        
+    Returns:
+        类目树的最大深度（1、2或3）
+    """
+    max_depth = 1
+    
+    for level_1_node in cat_tree:
+        level_2_children = level_1_node.get('children', [])
+        if level_2_children:
+            max_depth = max(max_depth, 2)
+            for level_2_node in level_2_children:
+                level_3_children = level_2_node.get('children', [])
+                if level_3_children:
+                    max_depth = max(max_depth, 3)
+                    break  # 只要找到一个3级节点就可以确定了
+            if max_depth == 3:
+                break
+    
+    return max_depth
 
 
 def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, group_name: str):
     """预测商品类目
 
-    通过三级预测流程，逐级预测商品的一级、二级、三级类目
+    通过多级预测流程，逐级预测商品的类目，根据类目树的实际深度决定预测层级
 
     Args:
         dispatcher: 模型调度器
@@ -103,12 +137,19 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         >>> predict_category(dispatcher, "护发喷雾", cat_tree, prompt, "group")
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'}]
     """
-    category_all = extr_cat_tree(cat_tree, level=3)
+    # 检测类目树的最大深度
+    max_depth = get_category_depth(cat_tree)
+    
+    # 如果最大深度小于3，使用实际深度，否则使用3
+    target_depth = min(max_depth, 3)
+    
+    category_all = extr_cat_tree(cat_tree, level=target_depth)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
     level_2_names: Optional[Union[List[str], str]] = None
 
-    for level in [1, 2, 3]:
+    # 根据实际深度进行循环
+    for level in range(1, target_depth + 1):
         category_options = extr_cat_tree(
             cat_tree, level=level, level_1_names=level_1_names, level_2_names=level_2_names
         )
@@ -118,14 +159,13 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         return_message = (
             return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
         )
+        if not return_message:
+            return {}
 
         if level == 1:
             level_1_names = return_message if isinstance(return_message, (str, list)) else None
         elif level == 2:
             level_2_names = return_message if isinstance(return_message, (str, list)) else None
-
-    if not return_message:
-        raise ValueError("未预测到类目")
 
     predict_results = []
     for category in return_message:
