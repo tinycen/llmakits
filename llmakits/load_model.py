@@ -2,7 +2,7 @@ from filekits.base_io.load import load_yaml
 from llmakits.llm_client import BaseOpenai
 
 
-def load_models(models_config_path, model_keys_path):
+def load_models(models_config, model_keys):
     """
     从YAML配置文件加载LLM模型配置并实例化模型
 
@@ -17,10 +17,16 @@ def load_models(models_config_path, model_keys_path):
         >>> models= load_models('config/llm_models_config.yaml', 'config/keys_config.yaml')
         >>> print(models.keys())  # 显示模型分组
     """
-    model_config = load_yaml(models_config_path)
-    model_keys = load_yaml(model_keys_path)
-    model_api_keys = model_keys["Api_keys"]
-    models_config = model_config["Models_config"]
+    # 检测参数类型，如果是字符串则进行加载
+    if isinstance(models_config, str):
+        model_config = load_yaml(models_config)
+        models_config = model_config["Models_config"]
+
+    if isinstance(model_keys, str):
+        model_keys = load_yaml(model_keys)
+        model_api_keys = model_keys["Api_keys"]
+    else:
+        model_api_keys = model_keys
     """
     {'Models_config': {'option_type': [{'model_name': 'Qwen/Qwen2.5-32B-Instruct', 'sdk_name': 'modelscope'},
     {'model_name': 'glm-4-flash-250414', 'sdk_name': 'zhipu'}]}}
