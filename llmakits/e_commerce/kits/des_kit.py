@@ -1,5 +1,5 @@
 from llmakits.dispatcher import ModelDispatcher
-from llmakits.e_commerce import validate_html_fix
+from ..validators.html_validator import validate_html_fix
 
 
 def generate_html(

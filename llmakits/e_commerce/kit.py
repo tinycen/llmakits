@@ -3,61 +3,7 @@ from .validators.string_validator import contains_chinese
 from .validators.value_validator import validate_dict
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
-
-
-# 临时定义 extr_cat_tree 函数，避免导入错误
-def extr_cat_tree(
-    cat_tree: Any,
-    level: int,
-    level_1_names: Optional[Union[List[str], str]] = None,
-    level_2_names: Optional[Union[List[str], str]] = None,
-) -> List[Dict[str, str]]:
-    """临时占位函数，需要替换为实际的 selectSql 模块实现"""
-    return []
-
-
-# 预测类目
-def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, group_name: str):
-    category_all = extr_cat_tree(cat_tree, level=3)
-    return_message: Union[str, List[str], Dict[str, Any]] = ""
-    level_1_names: Optional[Union[List[str], str]] = None
-    level_2_names: Optional[Union[List[str], str]] = None
-    for level in [1, 2, 3]:
-        # print(f"正在预测 {level} 级类目……")
-        category_options = extr_cat_tree(
-            cat_tree, level=level, level_1_names=level_1_names, level_2_names=level_2_names
-        )
-        user_text = f"商品标题:{title},可选类目:{category_options}"
-        message_info = {"user_text": user_text, "system_prompt": system_prompt}
-        return_message_raw, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
-        return_message = (
-            return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
-        )
-
-        if level == 1:
-            level_1_names = return_message if isinstance(return_message, (str, list)) else None
-        elif level == 2:
-            level_2_names = return_message if isinstance(return_message, (str, list)) else None
-
-    # print( return_message )
-
-    '''  示例响应结果
-        [{'cat_name': '美容和卫生 > 护发产品 > 护发喷雾', 'cat_id': '17028992-93942'},
-         {'cat_name': '美容和卫生 > 护发产品 > 头发精华素', 'cat_id': '17028992-93945'}]
-    '''
-    if not return_message:
-        raise ValueError("未预测到类目")
-    predict_results = []
-    for category in return_message:
-        if isinstance(category, dict):
-            search_data = {"value": category.get("cat_id", ""), "label": category.get("cat_name", "")}
-            value = validate_dict(category_all, search_data)
-            predict_results.append(value)
-    '''  示例响应结果
-        [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'},
-        {'value': '17028992-93945', 'label': '美容和卫生 > 护发产品 > 头发精华素'}]
-    '''
-    return predict_results
+from .kits.cat_kit import predict_category, extr_cat_tree
 
 
 def translate_options(
