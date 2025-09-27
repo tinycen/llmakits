@@ -19,6 +19,7 @@ class ModelDispatcher:
         model_keys: Optional[Union[str, Dict[str, Any]]] = None,
     ):
         self.model_switch_count = 0
+        self.exhausted_models = []
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys)
         else:
@@ -100,6 +101,7 @@ class ModelDispatcher:
                     print(f"模型 {sdk_name} - {model_name} API密钥 已用完")
                     # 从模型组中删除该模型
                     self._remove_exhausted_model(sdk_name, model_name)
+                    self.exhausted_models.append(f"{sdk_name}_{model_name}")
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
