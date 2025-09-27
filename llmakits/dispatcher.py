@@ -32,6 +32,7 @@ class ModelDispatcher:
         print(f"Model switch count: {self.model_switch_count}")
         if self.exhausted_models:
             print(f"Exhausted models: {self.exhausted_models}")
+        return
 
     # 移除Token已用尽的模型
     def _remove_exhausted_model(self, sdk_name: str, model_name: str):
