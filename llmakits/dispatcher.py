@@ -92,6 +92,7 @@ class ModelDispatcher:
                 return return_message, total_tokens
 
             except Exception as e:
+                print("-----------------------------------")
                 print(base_model_info)
 
                 # 检查是否是API密钥用尽异常
@@ -102,6 +103,7 @@ class ModelDispatcher:
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
+                    print("-----------------------------------")
                     self.model_switch_count += 1
                     continue
                 else:
