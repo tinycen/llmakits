@@ -20,12 +20,20 @@ class ModelDispatcher:
     ):
         self.model_switch_count = 0
         self.exhausted_models = []
+
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys)
         else:
             self.model_groups = {}
             self.model_keys = {}
 
+    # 输出报告
+    def report(self):
+        print(f"Model switch count: {self.model_switch_count}")
+        if self.exhausted_models:
+            print(f"Exhausted models: {self.exhausted_models}")
+
+    # 移除Token已用尽的模型
     def _remove_exhausted_model(self, sdk_name: str, model_name: str):
         """
         从模型组中删除API密钥用尽的模型
@@ -43,6 +51,7 @@ class ModelDispatcher:
             self.model_groups[group_name] = new_group_models
         return
 
+    # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
         self,
         message_info: Dict[str, Any],
@@ -114,6 +123,7 @@ class ModelDispatcher:
         # 如果所有模型都失败
         raise Exception("All models failed.")
 
+    # 执行任务 - 模型组调度器
     def execute_with_group(
         self,
         message_info: Dict[str, Any],
