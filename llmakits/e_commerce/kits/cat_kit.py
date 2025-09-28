@@ -152,9 +152,12 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
 
     # 根据实际深度进行循环
     for level in range(1, target_depth + 1):
-        category_options = extr_cat_tree(
-            cat_tree, level=level, level_1_names=level_1_names, level_2_names=level_2_names
-        )
+        if target_depth > 1:
+            category_options = extr_cat_tree(
+                cat_tree, level=level, level_1_names=level_1_names, level_2_names=level_2_names
+            )
+        else:
+            category_options = category_all
         user_text = f"商品标题:{title},可选类目:{category_options}"
         message_info = {"user_text": user_text, "system_prompt": system_prompt}
         return_message_raw, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
