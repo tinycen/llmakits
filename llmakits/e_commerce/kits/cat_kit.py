@@ -167,7 +167,7 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         if not return_message:
             return {}
 
-        if level == 1:
+        if level == 1 and target_depth > 1:
             level_1_names = return_message if isinstance(return_message, (str, list)) else None
         elif level == 2:
             level_2_names = return_message if isinstance(return_message, (str, list)) else None
