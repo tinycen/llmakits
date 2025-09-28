@@ -7,6 +7,7 @@ from zhipuai import ZhipuAI
 from llmakits.utils.retry_handler import RetryHandler, ResponseHandler
 
 from funcguard.core import timeout_handler
+from funcguard.printer import print_line
 
 
 # 定义基类
@@ -136,6 +137,7 @@ class BaseOpenai(BaseClient):
             self.api_keys.pop(0)  # 移除第一个密钥
             print(f"移除已用完的密钥，剩余 {api_keys_num-1} 个密钥")
             self._init_client()
+            print_line()
             return True
         return False
 
