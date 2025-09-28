@@ -174,6 +174,7 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         if isinstance(category, dict):
             search_data = {"value": category.get("cat_id", ""), "label": category.get("cat_name", "")}
             value = validate_dict(category_all, search_data)
-            predict_results.append(value)
+            if value:
+                predict_results.append(value)
 
     return predict_results
