@@ -73,8 +73,8 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
                 for level_2_node in level_1_node.get('children', []):
                     # 检查 level_2 是否匹配
                     should_include = level_2_names is None or (
-                        level_1_node['value'] in level_2_filters and 
-                        level_2_node['value'] in level_2_filters[level_1_node['value']]
+                        level_1_node['value'] in level_2_filters
+                        and level_2_node['value'] in level_2_filters[level_1_node['value']]
                     )
 
                     if should_include:
@@ -91,15 +91,15 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
 
 def get_category_depth(cat_tree: Any) -> int:
     """检测类目树的最大深度
-    
+
     Args:
         cat_tree: 类目树数据
-        
+
     Returns:
         类目树的最大深度（1、2或3）
     """
     max_depth = 1
-    
+
     for level_1_node in cat_tree:
         level_2_children = level_1_node.get('children', [])
         if level_2_children:
@@ -111,7 +111,7 @@ def get_category_depth(cat_tree: Any) -> int:
                     break  # 只要找到一个3级节点就可以确定了
             if max_depth == 3:
                 break
-    
+
     return max_depth
 
 
@@ -139,11 +139,13 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
     """
     # 检测类目树的最大深度
     max_depth = get_category_depth(cat_tree)
-    
+
     # 如果最大深度小于3，使用实际深度，否则使用3
     target_depth = min(max_depth, 3)
-    
-    category_all = extr_cat_tree(cat_tree, level=target_depth)
+    if target_depth == 1:
+        category_all = cat_tree
+    else:
+        category_all = extr_cat_tree(cat_tree, level=target_depth)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
     level_2_names: Optional[Union[List[str], str]] = None

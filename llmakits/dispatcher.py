@@ -6,6 +6,7 @@
 from typing import List, Dict, Any, Optional, Callable, Union
 from llmakits.message import convert_to_json
 from llmakits.load_model import load_models
+from funcguard.printer import print_line, print_block
 
 
 class ModelDispatcher:
@@ -95,15 +96,15 @@ class ModelDispatcher:
                             # 验证通过，直接返回验证通过的值
                             return validated_value, total_tokens
                     else:
-                        print(base_model_info)
-                        print("输出结果：条件校验失败, trying next model ...")
+                        content = "输出结果：条件校验失败, trying next model ..."
+                        print_block(base_model_info, content)
                         self.model_switch_count += 1
                         continue
 
                 return return_message, total_tokens
 
             except Exception as e:
-                print("-----------------------------------")
+                print_line()
                 print(base_model_info)
 
                 # 检查是否是API密钥用尽异常
@@ -115,7 +116,7 @@ class ModelDispatcher:
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
-                    print("-----------------------------------")
+                    print_line()
                     self.model_switch_count += 1
                     continue
                 else:

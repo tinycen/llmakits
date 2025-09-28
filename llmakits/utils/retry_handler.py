@@ -4,6 +4,7 @@
 """
 
 import time
+from funcguard.printer import print_line
 from typing import Dict, Tuple, Any, Optional
 
 # 默认的重试关键词列表
@@ -148,7 +149,7 @@ class RetryHandler:
             Tuple[bool, Any, bool]: (是否继续重试, 更新后的messages对象, 是否需要切换API密钥)
         """
         # 打印当前的模型信息
-        print("-----------------------------------")
+        print_line()
         print(f"当前 云服务商: {platform}，模型: {model_name}")
         print(e)
 
