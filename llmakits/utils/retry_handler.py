@@ -167,8 +167,12 @@ class RetryHandler:
             should_retry, updated_messages = self.handle_image_error(messages, message_config)
             return should_retry, updated_messages, False
 
-        elif "Request limit exceeded" in error_message:
+        elif "Request limit exceeded" in error_message:  # 适用于 modelscope
             print("模型每日请求超过限制")
+            return True, messages, True  # 需要重试且需要切换API密钥
+
+        elif "The free tier of the model has been exhausted" in error_message:  # 适用于 dashscope
+            print("免费额度已用完")
             return True, messages, True  # 需要重试且需要切换API密钥
 
         else:
