@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union, Callable
+from typing import Any, Dict, List, Union
 
 
 def validate_dict(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -24,29 +24,14 @@ def validate_dict(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) 
     if not search_data_keys.issubset(first_item_keys):
         raise ValueError(f"search_data的键 {search_data_keys} 必须是item_list中字典键 {first_item_keys} 的子集")
 
-    # 获取search_data的键和值
-    search_keys = list(search_data.keys())
-    search_values = [search_data[key] for key in search_keys]
-
     # 在item_list中查找匹配项
     for item in item_list:
-        # 检查所有search_data的键值是否都匹配
-        if all(item.get(key) == value for key, value in zip(search_keys, search_values)):
-            # 返回完整的item
-            return item
-
-    # key没有匹配到时，尝试通过value进行匹配
-    for item in item_list:
-        # 检查是否存在与search_data值对应的键值对
-        match_count = 0
-        for search_value in search_values:
-            for key, value in item.items():
-                if value == search_value:
-                    match_count += 1
-                    break
-        if match_count == len(search_values):
-            # 返回完整的item
-            return item
+        for item_key, item_value in item.items():
+            for search_key, search_value in search_data.items():
+                if item_key == search_key:
+                    return item
+                if item_value == search_value:
+                    return item
 
     # 未找到匹配项
     print(f"未找到匹配项: {search_data}")
