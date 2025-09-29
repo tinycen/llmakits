@@ -32,8 +32,21 @@ def validate_dict(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) 
     for item in item_list:
         # 检查所有search_data的键值是否都匹配
         if all(item.get(key) == value for key, value in zip(search_keys, search_values)):
-            # 返回包含相同键的结果
-            return {key: item.get(key) for key in search_keys}
+            # 返回完整的item
+            return item
+
+    # key没有匹配到时，尝试通过value进行匹配
+    for item in item_list:
+        # 检查是否存在与search_data值对应的键值对
+        match_count = 0
+        for search_value in search_values:
+            for key, value in item.items():
+                if value == search_value:
+                    match_count += 1
+                    break
+        if match_count == len(search_values):
+            # 返回完整的item
+            return item
 
     # 未找到匹配项
     print(f"未找到匹配项: {search_data}")
