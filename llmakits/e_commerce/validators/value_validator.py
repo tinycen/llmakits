@@ -24,14 +24,14 @@ def validate_dict(item_list: List[Dict[str, Any]], search_data: Dict[str, Any]) 
     if not search_data_keys.issubset(first_item_keys):
         raise ValueError(f"search_data的键 {search_data_keys} 必须是item_list中字典键 {first_item_keys} 的子集")
 
+    # 对 search_data_keys 进行排序，包含了字符 "id" 或 "value" 的键放在前面（这样可以优先匹配）
+    search_data_keys = sorted(search_data_keys, key=lambda x: (x.find("id") != -1, x.find("value") != -1))
+
     # 在item_list中查找匹配项
     for item in item_list:
-        for item_key, item_value in item.items():
-            for search_key, search_value in search_data.items():
-                if item_key == search_key:
-                    return item
-                if item_value == search_value:
-                    return item
+        for search_data_key in search_data_keys:
+            if item[search_data_key] == search_data[search_data_key]:
+                return item
 
     # 未找到匹配项
     print(f"未找到匹配项: {search_data}")
