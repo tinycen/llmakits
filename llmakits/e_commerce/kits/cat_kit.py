@@ -115,14 +115,14 @@ def get_category_depth(cat_tree: Any) -> int:
     return max_depth
 
 
-def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, system_prompt: str, group_name: str):
+def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, system_prompt: str, group_name: str):
     """预测商品类目
 
     通过多级预测流程，逐级预测商品的类目，根据类目树的实际深度决定预测层级
 
     Args:
         dispatcher: 模型调度器
-        title: 商品标题
+        product: 商品信息字典，包含 "title" 和 "image_url"
         cat_tree: 类目树数据
         system_prompt: 系统提示语
         group_name: 模型组名称
@@ -134,7 +134,9 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
         ValueError: 当未预测到类目时抛出
 
     Example:
-        >>> predict_category(dispatcher, "护发喷雾", cat_tree, prompt, "group")
+        >>> predict_category( dispatcher,
+            {"title": "护发喷雾", "image_url": "https://example.com/image.jpg"},
+            cat_tree, prompt, "group" )
         [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'}]
     """
     # 检测类目树的最大深度
@@ -149,6 +151,14 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
     return_message: Union[str, List[str], Dict[str, Any]] = ""
     level_1_names: Optional[Union[List[str], str]] = None
     level_2_names: Optional[Union[List[str], str]] = None
+    title = product.get("title", "")
+    image_url = product.get("image_url", "")
+    if image_url:
+        include_img = True
+        img_list = [image_url]
+    else:
+        include_img = False
+        img_list = []
 
     # 根据实际深度进行循环
     for level in range(1, target_depth + 1):
@@ -158,8 +168,16 @@ def predict_category(dispatcher: ModelDispatcher, title: str, cat_tree: Any, sys
             )
         else:
             category_options = category_all
+
         user_text = f"商品标题:{title},可选类目:{category_options}"
-        message_info = {"user_text": user_text, "system_prompt": system_prompt}
+
+        message_info = {
+            "user_text": user_text,
+            "system_prompt": system_prompt,
+            "include_img": include_img,
+            "img_list": img_list,
+        }
+
         return_message_raw, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
         return_message = (
             return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
