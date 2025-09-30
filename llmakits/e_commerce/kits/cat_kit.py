@@ -178,10 +178,8 @@ def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, 
             "img_list": img_list,
         }
 
-        return_message_raw, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
-        return_message = (
-            return_message_raw if isinstance(return_message_raw, (str, dict, list)) else str(return_message_raw)
-        )
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
+
         if not return_message:
             return {}
 
