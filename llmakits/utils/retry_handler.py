@@ -22,6 +22,7 @@ DEFAULT_RETRY_KEYWORDS = [
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
+    "Free credits temporarily have rate limits",  # vercel
 ]
 
 DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
