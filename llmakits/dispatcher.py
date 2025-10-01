@@ -4,9 +4,9 @@
 """
 
 from typing import List, Dict, Any, Optional, Callable, Union
-from llmakits.message import convert_to_json
-from llmakits.load_model import load_models
 from funcguard.printer import print_line, print_block
+from .message import convert_to_json
+from .load_model import load_models
 
 
 class ModelDispatcher:
