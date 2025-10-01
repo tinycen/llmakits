@@ -9,16 +9,22 @@ from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image
 
 
-# 默认的重试关键词列表
-DEFAULT_RETRY_KEYWORDS = [
+# 图片下载相关的错误关键词列表
+IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Download the media resource timed out",
     "Failed to download multimodal content",
     "Download multimodal file timed out",
+]
+
+# 默认的重试关键词列表
+DEFAULT_RETRY_KEYWORDS = [
     "Too many requests",
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
 ]
+
+DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
 
 
 class RetryHandler:
@@ -93,11 +99,7 @@ class RetryHandler:
         """
         print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
         # 如果图片：下载或读取 出现问题
-        if (
-            "Failed to download multimodal content" in error_message
-            or "Download multimodal file timed out" in error_message
-            or "Failed to download multimodal content" in error_message
-        ) and message_config["include_img"]:
+        if any(keyword in error_message for keyword in IMAGE_DOWNLOAD_ERROR_KEYWORDS) and message_config["include_img"]:
 
             img_list = message_config["img_list"]
             print(f"img_list: {img_list}")
