@@ -73,8 +73,9 @@ class BaseClient:
                     continue
                 else:
                     raise
-
-        raise Exception(f"api_retry 达到最大重试次数：{max_retries}")
+        error_message = f"api_retry 达到最大重试次数：{max_retries}"
+        print(error_message)
+        raise Exception(error_message)
 
     def _create_chat_completion(self, messages):
         """创建聊天完成请求"""

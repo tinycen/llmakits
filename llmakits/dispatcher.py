@@ -109,7 +109,7 @@ class ModelDispatcher:
 
                 # 检查是否是API密钥用尽异常
                 if str(e) == 'API_KEY_EXHAUSTED':
-                    print(f"模型 {sdk_name} - {model_name} API密钥 已用完")
+                    print(f"{sdk_name} - {model_name} API密钥 已用完")
                     # 从模型组中删除该模型
                     self._remove_exhausted_model(sdk_name, model_name)
                     self.exhausted_models.append(f"{sdk_name}_{model_name}")
