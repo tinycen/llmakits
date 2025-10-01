@@ -53,6 +53,22 @@ class ModelDispatcher:
             self.model_groups[group_name] = new_group_models
         return
 
+    def _print_next_model_info(self, llm_models: List[Dict[str, Any]], current_idx: int, models_num: int):
+        """
+        打印下一个模型的信息
+
+        Args:
+            llm_models: LLM模型列表
+            current_idx: 当前模型索引
+            models_num: 模型总数
+        """
+        if current_idx < models_num - 1:
+            next_model_info = llm_models[current_idx + 1]
+            next_sdk_name = next_model_info.get('sdk_name', 'unknown_sdk')
+            next_model_name = next_model_info.get('model_name', 'unknown_model')
+            next_base_model_info = f"{current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
+            print_block("Next model", next_base_model_info, ">")
+
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
         self,
@@ -99,6 +115,8 @@ class ModelDispatcher:
                         content = "输出结果：条件校验失败, trying next model ..."
                         print_block(base_model_info, content)
                         self.model_switch_count += 1
+                        # 打印下一个模型的信息
+                        self._print_next_model_info(llm_models, idx, models_num)
                         continue
 
                 return return_message, total_tokens
@@ -119,6 +137,8 @@ class ModelDispatcher:
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
+                    # 打印下一个模型的信息
+                    self._print_next_model_info(llm_models, idx, models_num)
                     print_line("=")
                     self.model_switch_count += 1
                     continue
