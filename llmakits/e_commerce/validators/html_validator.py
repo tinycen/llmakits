@@ -1,5 +1,5 @@
 import re
-from llmakits.dispatcher import ModelDispatcher
+from ...dispatcher import ModelDispatcher
 
 
 def check_allowed_tags(html_string: str, allowed_tags: set[str]):
@@ -136,4 +136,9 @@ def validate_html_fix(
         return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
         html_string = return_message["html"]
         is_valid, error_messages = validate_html(html_string, allowed_tags)
+
+    # 如果达到最大尝试次数仍未验证通过，抛出异常
+    if not is_valid:
+        raise Exception(f"HTML验证失败，已达到最大尝试修复次数({max_attempts})\n最后一次错误: {error_messages}")
+
     return html_string
