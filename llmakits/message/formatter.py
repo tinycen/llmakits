@@ -11,10 +11,10 @@ from typing import Any, Union, Tuple
 def remove_think_section(text: str) -> str:
     """
     移除思考段落（<think>...</think>标签内的内容）
-    
+
     Args:
         text: 原始文本
-        
+
     Returns:
         移除思考段落后的文本
     """
@@ -36,13 +36,13 @@ def remove_think_section(text: str) -> str:
 def extract_json_from_string(text_with_json: str) -> str:
     """
     从包含JSON内容的字符串中提取JSON字符串，优先匹配```json ... ```代码块
-    
+
     Args:
         text_with_json: 包含JSON内容的字符串
-        
+
     Returns:
         提取到的JSON字符串
-        
+
     Raises:
         ValueError: 如果未找到有效的JSON代码块
     """
@@ -56,25 +56,26 @@ def extract_json_from_string(text_with_json: str) -> str:
         except json.JSONDecodeError:
             print(f"警告: 提取到的```json代码块内容不是有效的JSON: {json_string}")
             raise ValueError("提取到的```json代码块内容不是有效的JSON")
+    print(text_with_json)
     raise ValueError("未找到有效的JSON代码块")
 
 
 def convert_to_json(text: str) -> Any:
     """
     将响应结果转换为JSON格式
-    
+
     Args:
         text: 原始文本
-        
+
     Returns:
         解析后的JSON对象
-        
+
     Raises:
         Exception: 如果无法解析为JSON格式
     """
     text = remove_think_section(text)
     text = text.strip()
-    
+
     try:
         if text.startswith("```json"):
             text = text.strip("```json\n")
@@ -88,12 +89,12 @@ def convert_to_json(text: str) -> Any:
                 pass
     except Exception:
         pass
-    
+
     # 新增：尝试用 extract_json_from_string 提取
     extracted_json = extract_json_from_string(text)
     if extracted_json:
         return json.loads(extracted_json)
-    
+
     print("无法解析为json格式:")
     print(text)
     raise Exception("无法解析为json格式")
@@ -102,14 +103,14 @@ def convert_to_json(text: str) -> Any:
 def extract_field(message: Union[str, dict], *target_fields: str) -> Union[Any, Tuple[Any, ...]]:
     """
     将响应结果转为json，并获取其中的指定字段
-    
+
     Args:
         message: 消息内容（字符串或字典）
         *target_fields: 要提取的字段名
-        
+
     Returns:
         单个字段值或多个字段的元组
-        
+
     Raises:
         KeyError: 如果指定字段不存在
     """
