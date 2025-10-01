@@ -34,7 +34,7 @@ def validate_dict(choices: List[Dict[str, Any]], search_data: Dict[str, Any]) ->
 
     # 未找到匹配项
     print(f"未找到匹配项: {search_data}")
-    if len(choices) < 20:
+    if len(choices) < 30:
         print(f"choices: {choices}")
 
     return {}
