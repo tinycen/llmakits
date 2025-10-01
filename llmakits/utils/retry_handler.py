@@ -124,7 +124,6 @@ class RetryHandler:
         返回:
             Tuple[bool, Any]: (是否继续重试, 更新后的messages对象)
         """
-        from llmakits.message import rebuild_messages_single_image
 
         print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
 
