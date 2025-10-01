@@ -6,15 +6,18 @@
 import time
 from funcguard.printer import print_line
 from typing import Dict, Tuple, Any, Optional
+from ..message import prepare_messages, rebuild_messages_single_image
+
 
 # 默认的重试关键词列表
 DEFAULT_RETRY_KEYWORDS = [
     "Download the media resource timed out",
+    "Failed to download multimodal content",
+    "Download multimodal file timed out",
     "Too many requests",
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
-    "Failed to download multimodal content",
 ]
 
 
@@ -38,7 +41,6 @@ class RetryHandler:
                     "img_list": message_info.get("img_list", []),
                 }
             )
-            from llmakits.message import prepare_messages
 
             messages = prepare_messages(
                 self.platform,
@@ -91,10 +93,14 @@ class RetryHandler:
         """
         print(f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……")
         # 如果图片：下载或读取 出现问题
-        if "Failed to download multimodal content" in error_message and message_config["include_img"]:
-            from llmakits.message import rebuild_messages_single_image
+        if (
+            "Failed to download multimodal content" in error_message
+            or "Download multimodal file timed out" in error_message
+            or "Failed to download multimodal content" in error_message
+        ) and message_config["include_img"]:
 
             img_list = message_config["img_list"]
+            print(f"img_list: {img_list}")
 
             messages = rebuild_messages_single_image(
                 self.platform,
