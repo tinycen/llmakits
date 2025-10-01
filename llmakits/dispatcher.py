@@ -113,6 +113,9 @@ class ModelDispatcher:
                     # 从模型组中删除该模型
                     self._remove_exhausted_model(sdk_name, model_name)
                     self.exhausted_models.append(f"{sdk_name}_{model_name}")
+                else:
+                    # 打印详细的错误信息
+                    print(f"错误详情: {e}")
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
