@@ -124,4 +124,5 @@ def extract_field(message: Union[str, dict], *target_fields: str) -> Union[Any, 
             return result[target_fields[0]]  # 只有一个字段时，直接返回该字段的值
         return tuple(result[field] for field in target_fields)  # 多个字段时，返回元组
     except KeyError as e:
+        print(message)
         raise KeyError(f"字段 {e} 不存在于消息中") from e
