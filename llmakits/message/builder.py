@@ -50,7 +50,7 @@ def rebuild_messages_single_image(
     provider_name: str,
     system_prompt: str,
     user_text: str,
-    check_num: bool,
+    reject_single_image: bool,
     img_list: list,
 ) -> List[Dict[str, Any]]:
     """
@@ -60,7 +60,7 @@ def rebuild_messages_single_image(
         provider_name: 提供商名称
         system_prompt: 系统提示词
         user_text: 用户文本
-        check_num: 是否检查图片数量
+        reject_single_image: 是否禁止单张图片（为True时若图片数量为1则抛异常）
         img_list: 图片URL列表
 
     Returns:
@@ -71,7 +71,7 @@ def rebuild_messages_single_image(
 
     img_num = len(img_list)
 
-    if check_num:
+    if reject_single_image:
         if img_num == 1:
             error_message = "异常：图片数量 == 1，未超出限制"
             print(f"{error_message}，img_list : {img_list}")

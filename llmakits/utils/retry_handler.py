@@ -109,7 +109,7 @@ class RetryHandler:
                 self.platform,
                 message_config["system_prompt"],
                 message_config["user_text"],
-                check_num=False,
+                reject_single_image=False,
                 img_list=img_list,
             )
         else:
@@ -134,7 +134,7 @@ class RetryHandler:
             self.platform,
             message_config["system_prompt"],
             message_config["user_text"],
-            check_num=True,
+            reject_single_image=True,
             img_list=message_config["img_list"],
         )
 
