@@ -50,8 +50,8 @@ def rebuild_messages_single_image(
     provider_name: str,
     system_prompt: str,
     user_text: str,
-    include_img: bool = False,
-    img_list: Optional[List[str]] = None,
+    check_num: bool,
+    img_list: list,
 ) -> List[Dict[str, Any]]:
     """
     重新构造messages，只使用第一张图片
@@ -60,22 +60,25 @@ def rebuild_messages_single_image(
         provider_name: 提供商名称
         system_prompt: 系统提示词
         user_text: 用户文本
-        include_img: 是否包含图片
+        check_num: 是否检查图片数量
         img_list: 图片URL列表
 
     Returns:
         格式化后的消息列表（只包含第一张图片）
     """
-    if img_list is None:
-        img_list = []
+    if not img_list:
+        raise ValueError("图片 img_list 不能为空!")
 
-    if len(img_list) == 1 and include_img:
-        print("异常：图片数量 未超出限制")
-        print(f"img_list : {img_list}")
-        raise Exception("异常：图片数量 == 1，未超出限制")
+    img_num = len(img_list)
+
+    if check_num:
+        if img_num == 1:
+            error_message = "异常：图片数量 == 1，未超出限制"
+            print(f"{error_message}，img_list : {img_list}")
+            raise Exception(error_message)
 
     # 重新构造messages，只使用第一张图片
-    return prepare_messages(provider_name, system_prompt, user_text, include_img, [img_list[0]] if img_list else [])
+    return prepare_messages(provider_name, system_prompt, user_text, True, [img_list[0]] if img_list else [])
 
 
 def _build_content_by_provider(

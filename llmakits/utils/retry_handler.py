@@ -109,8 +109,8 @@ class RetryHandler:
                 self.platform,
                 message_config["system_prompt"],
                 message_config["user_text"],
-                message_config["include_img"],
-                img_list,
+                check_num=False,
+                img_list=img_list,
             )
         else:
             time.sleep(10 * (api_retry_count + 1))  # 等待一段时间后重试
@@ -134,8 +134,8 @@ class RetryHandler:
             self.platform,
             message_config["system_prompt"],
             message_config["user_text"],
-            message_config["include_img"],
-            message_config["img_list"],
+            check_num=True,
+            img_list=message_config["img_list"],
         )
 
         return True, messages
