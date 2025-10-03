@@ -4,7 +4,7 @@
 """
 
 from typing import List, Optional, Dict, Any
-from filekits.base_io.down_load import batch_download_encode_base64
+from filekits.base_io import download_encode_base64, batch_download_encode_base64
 
 
 def prepare_messages(
@@ -99,6 +99,13 @@ def _build_content_by_provider(
         user_content = user_text
         img_list = batch_download_encode_base64(img_list)
 
+    elif provider_name == "openrouter":
+        # openrouter 需要base64格式的图片
+        img_list = convert_images_to_base64(img_list)
+        user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
+        user_content.append({"type": "text", "text": user_text})
+        system_content = [{"type": "text", "text": system_prompt}]
+
     else:
         # 兼容通用的 "openai", "zhipu", "modelscope" 格式
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
@@ -106,6 +113,47 @@ def _build_content_by_provider(
         system_content = [{"type": "text", "text": system_prompt}]
 
     return system_content, user_content
+
+
+def convert_images_to_base64(img_list: List[str]) -> List[str]:
+    """
+    将图片URL列表转换为base64格式
+
+    Args:
+        img_list: 图片URL列表
+
+    Returns:
+        转换后的图片URL列表（base64格式的保留，非图片格式的保持原样）
+    """
+    if not img_list:
+        raise ValueError("图片 img_list 不能为空!")
+
+    processed_img_list = []
+    valid_extensions = ('.jpg', '.jpeg', '.png')
+
+    for img_url in img_list:
+        # 检查是否为有效的图片URL
+        img_lower = img_url.lower()
+        if img_lower.endswith(valid_extensions):
+            try:
+                # 下载并转换为base64
+                base64_str = download_encode_base64(img_url)
+                if base64_str:
+                    # 构建base64格式的图片URL
+                    mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
+                    base64_url = f"data:{mime_type};base64,{base64_str}"
+                    processed_img_list.append(base64_url)
+                    print(f"已将图片转换为base64格式: {img_url[:50]}...")
+                else:
+                    print(f"图片 {img_url} 转换为base64失败，保持原始URL")
+                    processed_img_list.append(img_url)
+            except Exception as e:
+                print(f"转换图片为base64失败 {img_url}: {e}")
+                processed_img_list.append(img_url)
+        else:
+            processed_img_list.append(img_url)
+
+    return processed_img_list
 
 
 def _build_message_structure(

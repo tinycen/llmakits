@@ -5,9 +5,8 @@
 
 import time
 from funcguard.printer import print_line
-from filekits.base_io import download_encode_base64
 from typing import Dict, Tuple, Any, Optional
-from ..message import prepare_messages, rebuild_messages_single_image
+from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
 
 
 # 图片下载相关的错误关键词列表
@@ -108,32 +107,8 @@ class RetryHandler:
 
             # 第3次尝试时，检测图片格式并进行base64转换
             if api_retry_count == 2 and img_list:
-                valid_extensions = ('.jpg', '.jpeg', '.png')
-                processed_img_list = []
-                print("尝试将图片转为base64传入……")
-
-                for img_url in img_list:
-                    # 检查是否为有效的图片URL（简化处理）
-                    img_lower = img_url.lower()
-                    if img_lower.endswith(valid_extensions):
-
-                        # 下载并转换为base64
-                        base64_str = download_encode_base64(img_url)
-                        if base64_str:
-                            # 构建base64格式的图片URL
-                            mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
-                            base64_url = f"data:{mime_type};base64,{base64_str}"
-                            processed_img_list.append(base64_url)
-                            print(f"已将图片转换为base64格式")
-                        else:
-                            print(f"图片 {img_url} 转换为base64失败，保持原始URL")
-                            processed_img_list.append(img_url)
-
-                    else:
-                        processed_img_list.append(img_url)
-
-                # 使用处理后的图片列表
-                img_list = processed_img_list
+                print(f"尝试将图片转换为base64格式...")
+                img_list = convert_images_to_base64(img_list)
 
             messages = rebuild_messages_single_image(
                 self.platform,
