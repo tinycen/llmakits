@@ -73,13 +73,6 @@ class BaseClient:
                     continue
                 else:
                     error_message = f"第 {api_retry_count + 1} 次尝试后失败：{e}"
-                    # print(f"response: {response.model_dump_json()}")
-                    # '{"id":null,"choices":null,"created":null,"model":null,"object":null,
-                    # "service_tier":null,"system_fingerprint":null,"usage":null,
-                    # "error":{"message":"Provider returned error","code":400,
-                    # "metadata":{"raw":"{\\"code\\":\\"Unrecoverable data loss or corruption\\",
-                    # \\"error\\":\\"Failed to fetch image from URL https://img.fruugo.com/product/6/20/177033206_max.jpg.\\"}",
-                    # "provider_name":"xAI"}},"user_id":"user_2xo4tXYnYi3N99AT8P2w2JA3ERR"}'
 
                     raise Exception(error_message)
 
