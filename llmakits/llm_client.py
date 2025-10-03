@@ -72,7 +72,10 @@ class BaseClient:
                     api_retry_count += 1
                     continue
                 else:
-                    raise
+                    error_message = f"第 {api_retry_count + 1} 次尝试后失败：{e}"
+                    print(f"response: {response.model_dump_json()}")
+                    raise Exception(error_message)
+
         error_message = f"api_retry 达到最大重试次数：{max_retries}"
         print(error_message)
         raise Exception(error_message)
