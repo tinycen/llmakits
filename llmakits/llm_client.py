@@ -42,7 +42,7 @@ class BaseClient:
         messages, request_data = self.retry_handler.prepare_request_data(messages, message_info)
 
         # 执行重试逻辑
-        max_retries = 5
+        max_retries = 4
         api_retry_count = 0
 
         while api_retry_count < max_retries:
