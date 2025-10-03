@@ -106,7 +106,7 @@ class RetryHandler:
             print(f"img_list: {img_list}")
 
             # 第3次尝试时，检测图片格式并进行base64转换
-            if api_retry_count == 2 and img_list:
+            if api_retry_count == 1 and img_list:
                 print(f"尝试将图片转换为base64格式...")
                 img_list = convert_images_to_base64(img_list)
 
