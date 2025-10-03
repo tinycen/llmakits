@@ -66,10 +66,19 @@ class RetryHandler:
 
         if response is not None:
             try:
+                # hasattr 检查 response 是否有 json 方法
                 if hasattr(response, 'json'):
                     res = response.json()
                     error = res.get("error", res.get("errors", {}))
                     error_message = error.get("message", str(e))
+                elif hasattr(response, 'model_dump'):  # 兼容 openai
+                    res = response.model_dump()
+                    error = res.get("error", {})
+                    message = error.get("message", "")
+                    metadata = error.get("metadata", {})
+                    raw = metadata.get("raw", "")
+                    provider_name = metadata.get("provider_name", "")
+                    error_message = f"message: {message} : provider: {provider_name} , {raw}"
             except (AttributeError, ValueError):
                 error_message = str(e)
 
@@ -164,7 +173,7 @@ class RetryHandler:
         # 打印当前的模型信息
         print_line()
         print(f"当前 云服务商: {platform}，模型: {model_name}")
-        print(e)
+        # print(e)
 
         # 获取错误信息
         error_message = self.extract_error_message(e)
@@ -210,7 +219,16 @@ class ResponseHandler:
             else:
                 result = timeout_handler_func(process_stream_response_func, args=(response,), execution_timeout=300)
         else:
-            result = response.choices[0].message.content
-            total_tokens = response.usage.total_tokens
+            if response.choices:
+                result = response.choices[0].message.content
+                total_tokens = response.usage.total_tokens
+            else:
+                try:
+                    res = response.model_dump()  # 兼容 openai
+                    raise Exception(res)
+                except Exception as e:
+                    print(f"处理响应时出错：{e}")
+                    print(f"原始响应：{response}")
+                    raise e
 
         return result, total_tokens
