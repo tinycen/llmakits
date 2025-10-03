@@ -64,14 +64,13 @@ class RetryHandler:
         error_message = str(e)
         response = getattr(e, 'response', None)
 
-        if response is not None:
+        # 如果异常对象本身就是response（来自handle_response的直接抛出）
+        if hasattr(e, 'model_dump'):
+            response = e
+
+        if response:
             try:
-                # hasattr 检查 response 是否有 json 方法
-                if hasattr(response, 'json'):
-                    res = response.json()
-                    error = res.get("error", res.get("errors", {}))
-                    error_message = error.get("message", str(e))
-                elif hasattr(response, 'model_dump'):  # 兼容 openai
+                if hasattr(response, 'model_dump'):  # 兼容 openai
                     res = response.model_dump()
                     error = res.get("error", {})
                     message = error.get("message", "")
@@ -79,6 +78,13 @@ class RetryHandler:
                     raw = metadata.get("raw", "")
                     provider_name = metadata.get("provider_name", "")
                     error_message = f"message: {message} : provider: {provider_name} , {raw}"
+
+                # hasattr 检查 response 是否有 json 方法
+                elif hasattr(response, 'json'):
+                    res = response.json()
+                    error = res.get("error", res.get("errors", {}))
+                    error_message = error.get("message", str(e))
+
             except (AttributeError, ValueError):
                 error_message = str(e)
 
@@ -198,9 +204,9 @@ class RetryHandler:
             return True, messages, True  # 需要重试且需要切换API密钥
 
         else:
-            error_message = f"其他异常错误：{e}"
-            # print(error_message)
-            raise Exception(error_message)
+            # 直接重新抛出原始异常，保持异常对象的完整性
+            # print(f"其他异常错误：{e}")
+            raise e
 
 
 class ResponseHandler:
@@ -223,12 +229,8 @@ class ResponseHandler:
                 result = response.choices[0].message.content
                 total_tokens = response.usage.total_tokens
             else:
-                try:
-                    res = response.model_dump()  # 兼容 openai
-                    raise Exception(res)
-                except Exception as e:
-                    print(f"处理响应时出错：{e}")
-                    print(f"原始响应：{response}")
-                    raise e
+                # 如果没有choices，直接抛出原始response对象
+                print(f"响应中没有choices，原始响应：{response}")
+                raise response
 
         return result, total_tokens

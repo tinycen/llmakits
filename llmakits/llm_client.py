@@ -42,7 +42,7 @@ class BaseClient:
         messages, request_data = self.retry_handler.prepare_request_data(messages, message_info)
 
         # 执行重试逻辑
-        max_retries = 3
+        max_retries = 4  # 考虑到 需要切换api key , 以及可能面临图片异常，设置为 4 比较合理
         api_retry_count = 0
 
         while api_retry_count < max_retries:
@@ -72,9 +72,8 @@ class BaseClient:
                     api_retry_count += 1
                     continue
                 else:
-                    error_message = f"第 {api_retry_count + 1} 次尝试后失败：{e}"
-
-                    raise Exception(error_message)
+                    # 直接重新抛出原始异常，保持异常对象的完整性
+                    raise e
 
         error_message = f"api_retry 达到最大重试次数：{max_retries}"
         print(error_message)
