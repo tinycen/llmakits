@@ -143,7 +143,7 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
                     mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
                     base64_url = f"data:{mime_type};base64,{base64_str}"
                     processed_img_list.append(base64_url)
-                    print(f"已将图片转换为base64格式: {img_url[:50]}...")
+                    print(f"已将图片转换为base64格式: {img_url}...")
                 else:
                     print(f"图片 {img_url} 转换为base64失败，保持原始URL")
                     processed_img_list.append(img_url)
