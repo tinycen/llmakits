@@ -60,9 +60,16 @@ class DashScope :
                     return result, total_tokens
             try :
                 usage = response.usage
-                total_tokens = usage.input_tokens + usage.output_tokens
+                if hasattr(usage, 'input_tokens') and hasattr(usage, 'output_tokens'):
+                    total_tokens = usage.input_tokens + usage.output_tokens
+                else:
+                    total_tokens = 0
                 if self.task == "multi" :
-                    result = response.output.choices[ 0 ].message.content[ 0 ][ 'text' ]
+                    content = response.output.choices[ 0 ].message.content
+                    if isinstance(content, list) and len(content) > 0 and isinstance(content[0], dict) and 'text' in content[0]:
+                        result = content[ 0 ][ 'text' ]
+                    else:
+                        result = str(content) if content else ""
                 else :
                     result = response.output.choices[ 0 ].message.content
 

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 from ..validators.value_validator import validate_dict
+from ...message.formatter import convert_to_json
 from ...dispatcher import ModelDispatcher
 
 
@@ -178,7 +179,13 @@ def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, 
             "img_list": img_list,
         }
 
-        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=False)
+        # 只有当 return_message 是字符串时才尝试转换为 JSON
+        if isinstance(return_message, str):
+            try:
+                return_message = convert_to_json(return_message)
+            except Exception:
+                pass
 
         if not return_message:
             return {}
