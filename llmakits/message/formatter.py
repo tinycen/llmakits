@@ -56,7 +56,7 @@ def extract_json_from_string(text_with_json: str) -> str:
         except json.JSONDecodeError:
             print(f"警告: 提取到的```json代码块内容不是有效的JSON: {json_string}")
             raise ValueError("提取到的```json代码块内容不是有效的JSON")
-    print(text_with_json)
+    # print(text_with_json)
     raise ValueError("未找到有效的JSON代码块")
 
 
