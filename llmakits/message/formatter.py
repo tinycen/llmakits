@@ -75,25 +75,43 @@ def convert_to_json(text: str) -> Any:
     """
     text = remove_think_section(text)
     text = text.strip()
+    converted_json = None
 
     try:
         if text.startswith("```json"):
             text = text.strip("```json\n")
+
+        # 首先尝试直接解析JSON
+        converted_json = json.loads(text)
+    except json.JSONDecodeError:
         try:
-            return json.loads(text)
-        except json.JSONDecodeError:
             # 尝试使用eval作为备选方案（谨慎使用）
+            converted_json = eval(text)
+        except:
+            # 如果eval也失败，尝试提取JSON字符串
             try:
-                return eval(text)
+                extracted_json = extract_json_from_string(text)
+                if extracted_json:
+                    converted_json = json.loads(extracted_json)
             except:
                 pass
-    except Exception:
-        pass
 
-    # 新增：尝试用 extract_json_from_string 提取
-    extracted_json = extract_json_from_string(text)
-    if extracted_json:
-        return json.loads(extracted_json)
+    if converted_json is not None:
+        if "answer" in converted_json:  # 针对 zhipu 思考模式
+            answer = converted_json["answer"]
+            if isinstance(answer, (dict, list)):
+                return answer
+            elif isinstance(answer, str):
+                # 只对字符串类型的answer尝试递归解析，但限制递归深度
+                try:
+                    return convert_to_json(answer)
+                except:
+                    # 如果解析失败，返回原始answer字符串
+                    return answer
+            else:
+                return answer
+        else:
+            return converted_json
 
     print("无法解析为json格式:")
     print(text)
