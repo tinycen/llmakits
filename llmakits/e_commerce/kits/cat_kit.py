@@ -116,7 +116,13 @@ def get_category_depth(cat_tree: Any) -> int:
     return max_depth
 
 
-def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, system_prompt: str, group_name: str):
+def predict_category(
+    dispatcher: ModelDispatcher,
+    product: dict,
+    cat_tree: Any,
+    predict_config: dict,
+    fix_json_config: dict = {},
+):
     """预测商品类目
 
     通过多级预测流程，逐级预测商品的类目，根据类目树的实际深度决定预测层级
@@ -125,8 +131,8 @@ def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, 
         dispatcher: 模型调度器
         product: 商品信息字典，包含 "title" 和 "image_url"
         cat_tree: 类目树数据
-        system_prompt: 系统提示语
-        group_name: 模型组名称
+        predict_config:{ system_prompt: 系统提示语, group_name: 模型组名称 }
+        fix_json_config:{ system_prompt: 系统提示语, group_name: 模型组名称 } 默认为空
 
     Returns:
         预测的类目结果列表，每个结果包含 value 和 label
@@ -174,18 +180,26 @@ def predict_category(dispatcher: ModelDispatcher, product: dict, cat_tree: Any, 
 
         message_info = {
             "user_text": user_text,
-            "system_prompt": system_prompt,
+            "system_prompt": predict_config["system_prompt"],
             "include_img": include_img,
             "img_list": img_list,
         }
 
-        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=False)
+        return_message, _ = dispatcher.execute_with_group(message_info, predict_config["group_name"], format_json=False)
         # 只有当 return_message 是字符串时才尝试转换为 JSON
         if isinstance(return_message, str):
             try:
                 return_message = convert_to_json(return_message)
-            except Exception:
-                pass
+            except Exception as e:
+                if fix_json_config:
+                    print("尝试修复错误的JSON格式……")
+                    user_text = f"error_json_str:{return_message}"
+                    message_info = {"user_text": user_text, "system_prompt": fix_json_config["system_prompt"]}
+                    return_message, _ = dispatcher.execute_with_group(
+                        message_info, fix_json_config["group_name"], format_json=True
+                    )
+                else:
+                    raise e
 
         if not return_message:
             return {}
