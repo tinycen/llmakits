@@ -10,9 +10,12 @@ on:
 # 权限设置：
 # contents: write - 允许创建 GitHub Release
 # models: read   - 允许调用 GitHub Models AI API
+# pull-requests: write - 允许创建PR评论（如果需要）
 permissions:
   contents: write
   models: read
+  pull-requests: write
+  id-token: write
 
 jobs:
   build-test-publish-release:
@@ -103,7 +106,7 @@ jobs:
             --arg prompt "$PROMPT" \
             --arg commits "$CHANGELOG_DATA" \
             '{
-              "model": "openai/gpt-4o",
+              "model": "gpt-4o-mini",
               "messages": [
                 {
                   "role": "system",
@@ -118,11 +121,11 @@ jobs:
 
           echo "Sending prompt to AI model..."
 
-          # 调用 GitHub Models API
-          AI_RESPONSE=$(curl -s "https://models.github.ai/inference/chat/completions" \
+          # 使用 GitHub 的 OpenAI API 端点（更新的端点）
+          AI_RESPONSE=$(curl -s "https://api.githubcopilot.com/chat/completions" \
                -H "Content-Type: application/json" \
                -H "Authorization: Bearer $GITHUB_TOKEN" \
-               -d "$JSON_PAYLOAD")
+               -d "$JSON_PAYLOAD" || echo '{"error": "API call failed"}')
 
           # =======================================================
           # === 新增的调试步骤：打印从 API 收到的原始响应 ===
@@ -131,8 +134,15 @@ jobs:
           echo "--- Raw AI Response End ---"
           # =======================================================
 
-          # 从 AI 响应中提取内容，并设置为 step 的输出
-          RELEASE_BODY=$(echo "$AI_RESPONSE" | jq -r '.choices[0].message.content')
+          # 检查响应是否有效，如果API调用失败则使用备用方案
+          if echo "$AI_RESPONSE" | jq -e '.choices[0].message.content' > /dev/null 2>&1; then
+            # 从 AI 响应中提取内容，并设置为 step 的输出
+            RELEASE_BODY=$(echo "$AI_RESPONSE" | jq -r '.choices[0].message.content')
+          else
+            # 如果AI调用失败，使用简单的备用方案
+            echo "AI API调用失败，使用备用方案生成release notes"
+            RELEASE_BODY="## What's Changed\n\n$CHANGELOG_DATA\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$CURRENT_TAG"
+          fi
 
           echo "Generated Release Notes:"
           echo "$RELEASE_BODY"
