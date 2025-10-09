@@ -97,17 +97,13 @@ def convert_to_json(text: str) -> Any:
                 pass
 
     if converted_json is not None:
-        if "answer" in converted_json:  # 针对 zhipu 思考模式
+        if "answer" in converted_json:
             answer = converted_json["answer"]
             if isinstance(answer, (dict, list)):
                 return answer
             elif isinstance(answer, str):
-                # 只对字符串类型的answer尝试递归解析，但限制递归深度
-                try:
-                    return convert_to_json(answer)
-                except:
-                    # 如果解析失败，返回原始answer字符串
-                    return answer
+                # 只对字符串类型的answer尝试递归解析
+                return convert_to_json(answer)
             else:
                 return answer
         else:
