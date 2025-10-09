@@ -194,6 +194,8 @@ def predict_category(
                 if fix_json_config:
                     print("尝试修复错误的JSON格式……")
                     user_text = f"error_json_str:{return_message}"
+                    example_json = ''' [{"cat_name": "……", "cat_id": "……"}] '''
+                    user_text += f"，请修复为正确的JSON格式，示例：{example_json}"
                     message_info = {"user_text": user_text, "system_prompt": fix_json_config["system_prompt"]}
                     return_message, _ = dispatcher.execute_with_group(
                         message_info, fix_json_config["group_name"], format_json=True
