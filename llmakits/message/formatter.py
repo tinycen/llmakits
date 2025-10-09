@@ -97,7 +97,7 @@ def convert_to_json(text: str) -> Any:
                 pass
 
     if converted_json is not None:
-        if "answer" in converted_json:
+        if "answer" in converted_json:  # zhipu 'glm-4-flash-250414' 模型会返回 answer 字段
             answer = converted_json["answer"]
             if isinstance(answer, (dict, list)):
                 return answer

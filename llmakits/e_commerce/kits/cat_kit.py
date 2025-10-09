@@ -4,6 +4,31 @@ from ...message.formatter import convert_to_json
 from ...dispatcher import ModelDispatcher
 
 
+def standardize_category_format(cat_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """标准化类目数据格式，统一使用cat_id和cat_name键名
+
+    Args:
+        cat_data: 类目数据列表，可能使用value/label或cat_id/cat_name
+
+    Returns:
+        标准化后的类目数据列表，统一使用cat_id和cat_name
+    """
+    if not cat_data:
+        return []
+
+    # 检查第一个元素使用的键名
+    first_item = cat_data[0]
+    if isinstance(first_item, dict):
+        if 'value' in first_item and 'label' in first_item:
+            # 转换为cat_id/cat_name格式
+            return [{'cat_id': item['value'], 'cat_name': item['label']} for item in cat_data]
+        elif 'cat_id' in first_item and 'cat_name' in first_item:
+            # 已经是标准格式
+            return cat_data
+
+    return cat_data
+
+
 # 提取类目树
 def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
     """
@@ -20,15 +45,10 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
         示例值： [{"cat_name": "儿童用品"}, {"cat_name": "美容和卫生"}, {"cat_name": "日化"}]
     :param level_2_names: 可选，用于在 level 3 时过滤特定的 level_2 类目，格式为包含 "level_1 > level_2" 的列表
         示例值：[{"cat_name": "美容和卫生 > 护理化妆品"}, {"cat_name": "儿童用品 > 产妇和新生儿用品"}]
-    :return: 提取后的层级信息列表
+    :return: 提取后的层级信息列表，统一使用cat_id和cat_name键名格式
     """
     # 从 cat_tree 中移除 "最近添加" 的一级类目，并返回剩余的节点
     cat_tree = [node for node in cat_tree if node["label"] != "最近添加"]
-
-    if level_1_names == level_2_names is None:
-        cat_keys = ["value", "label"]
-    else:
-        cat_keys = ["cat_id", "cat_name"]
 
     result = []
 
@@ -53,8 +73,9 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
             level_1_names = list(level_2_filters.keys())
 
     if level == 1:
-        # level 1 不进行任何过滤，直接返回所有 level_1
-        result = list({node['value'] for node in cat_tree})
+        # level 1 不进行任何过滤，直接返回所有 level_1，标准化为cat_id/cat_name格式
+        unique_values = list({node['value'] for node in cat_tree})
+        result = [{'cat_id': value, 'cat_name': value} for value in unique_values]
 
     elif level == 2:
         for level_1_node in cat_tree:
@@ -62,9 +83,11 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
                 children = level_1_node.get('children', [])
                 if children:  # 只有当有子节点时才处理
                     for level_2_node in children:
-                        val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]}"
-                        if val not in result:
-                            result.append(val)
+                        cat_id = f"{level_1_node['value']} > {level_2_node['value']}"
+                        cat_name = f"{level_1_node['label']} > {level_2_node['label']}"
+                        result_item = {'cat_id': cat_id, 'cat_name': cat_name}
+                        if result_item not in result:
+                            result.append(result_item)
 
     elif level == 3:
 
@@ -84,8 +107,11 @@ def extr_cat_tree(cat_tree, level=1, level_1_names=None, level_2_names=None):
                         if level_3_children:  # 只有当有子节点时才处理
                             for level_3_node in level_3_children:
                                 level_label_3 = level_3_node['label']
-                                val = f"{level_1_node[ 'value' ]} > {level_2_node[ 'value' ]} > {level_label_3}"
-                                result.append({cat_keys[0]: level_3_node['value'], cat_keys[1]: val})
+                                cat_id_path = (
+                                    f"{level_1_node['value']} > {level_2_node['value']} > {level_3_node['value']}"
+                                )
+                                cat_name_path = f"{level_1_node['label']} > {level_2_node['label']} > {level_label_3}"
+                                result.append({'cat_id': cat_id_path, 'cat_name': cat_name_path})
 
     return result
 
@@ -135,7 +161,7 @@ def predict_category(
         fix_json_config:{ system_prompt: 系统提示语, group_name: 模型组名称 } 默认为空
 
     Returns:
-        预测的类目结果列表，每个结果包含 value 和 label
+        预测的类目结果列表，每个结果统一使用cat_id和cat_name键名格式
 
     Raises:
         ValueError: 当未预测到类目时抛出
@@ -144,7 +170,7 @@ def predict_category(
         >>> predict_category( dispatcher,
             {"title": "护发喷雾", "image_url": "https://example.com/image.jpg"},
             cat_tree, prompt, "group" )
-        [{'value': '17028992-93942', 'label': '美容和卫生 > 护发产品 > 护发喷雾'}]
+        [{'cat_id': '17028992-93942', 'cat_name': '美容和卫生 > 护发产品 > 护发喷雾'}]
     """
     # 检测类目树的最大深度
     max_depth = get_category_depth(cat_tree)
@@ -152,7 +178,8 @@ def predict_category(
     # 如果最大深度小于3，使用实际深度，否则使用3
     target_depth = min(max_depth, 3)
     if target_depth == 1:
-        category_all = cat_tree
+        # 对于一级类目，标准化格式为cat_id/cat_name
+        category_all = standardize_category_format(cat_tree)
     else:
         category_all = extr_cat_tree(cat_tree, level=target_depth)
     return_message: Union[str, List[str], Dict[str, Any]] = ""
@@ -211,10 +238,14 @@ def predict_category(
         elif level == 2:
             level_2_names = return_message if isinstance(return_message, (str, list)) else None
 
+    # 标准化返回的消息格式
+    standardized_return_message = standardize_category_format(return_message)  # pyright: ignore[reportArgumentType]
+
     predict_results = []
-    for category in return_message:
+    for category in standardized_return_message:
         if isinstance(category, dict):
-            search_data = {"value": category.get("cat_id", ""), "label": category.get("cat_name", "")}
+            # 统一使用cat_id/cat_name格式进行验证
+            search_data = {"cat_id": category.get("cat_id", ""), "cat_name": category.get("cat_name", "")}
             value = validate_dict(category_all, search_data)
             if value:
                 predict_results.append(value)
