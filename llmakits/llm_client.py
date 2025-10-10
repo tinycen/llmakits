@@ -4,10 +4,9 @@ from typing import Optional, Union
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
-from llmakits.utils.retry_handler import RetryHandler, ResponseHandler
-
-from funcguard.core import timeout_handler
+from .utils.retry_handler import RetryHandler, ResponseHandler
 from funcguard.printer import print_line
+from funcguard.core import timeout_handler
 
 
 # 定义基类
@@ -48,11 +47,11 @@ class BaseClient:
         while api_retry_count < max_retries:
             try:
                 # 创建聊天完成请求
-                response = self._create_chat_completion(messages)
+                response = timeout_handler(self._create_chat_completion, args=(messages,), execution_timeout=180)
 
                 # 处理响应
                 result, total_tokens = ResponseHandler.handle_response(
-                    response, self.stream, self.stream_real, timeout_handler, process_stream_response
+                    response, self.stream, self.stream_real, process_stream_response
                 )
                 return result, total_tokens
 

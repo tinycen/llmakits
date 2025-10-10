@@ -5,6 +5,7 @@
 
 import time
 from funcguard.printer import print_line
+from funcguard.core import timeout_handler
 from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
 
@@ -214,16 +215,17 @@ class ResponseHandler:
 
     @staticmethod
     def handle_response(
-        response: Any, stream: bool, stream_real: bool, timeout_handler_func: Any, process_stream_response_func: Any
+        response: Any, stream: bool, stream_real: bool, process_stream_response_func: Any
     ) -> Tuple[Any, int]:
         """处理响应"""
+
         total_tokens = 0
 
         if stream:
             if stream_real:
                 result = response
             else:
-                result = timeout_handler_func(process_stream_response_func, args=(response,), execution_timeout=300)
+                result = timeout_handler(process_stream_response_func, args=(response,), execution_timeout=180)
         else:
             if response.choices:
                 result = response.choices[0].message.content
