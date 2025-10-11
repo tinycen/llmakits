@@ -15,7 +15,7 @@ def predict_cat_direct(
     dispatcher: ModelDispatcher,
     product: dict,
     cat_tree: Any,
-    predict_config: dict,
+    system_prompt: str,
     fix_json_config: dict = {},
 ) -> List[Dict[str, Any]]:
     """
@@ -27,7 +27,13 @@ def predict_cat_direct(
         dispatcher: 模型调度器
         product: 商品信息字典，包含 "title" 和 "image_url"
         cat_tree: 类目树数据
-        predict_config: { system_prompt: 系统提示语, group_name: 模型组名称 }
+        system_prompt: 系统提示词
+        fix_json_config:
+            {
+                "group_name": "fix_json",  # 修复模型组名称
+                "system_prompt": "你是JSON修复专家...",
+                "example_json": '{"key": "value"}'  # 可选：JSON示例
+            }
 
     Returns:
         预测的类目结果列表
@@ -44,33 +50,56 @@ def predict_cat_direct(
     # 准备消息
     title = product.get("title", "")
     image_url = product.get("image_url", "")
-
-    if image_url:
-        include_img = True
-        img_list = [image_url]
-    else:
-        include_img = False
-        img_list = []
-
     user_text = f"商品标题:{title},可选类目:{category_all}"
-    message_info = {
-        "user_text": user_text,
-        "system_prompt": predict_config["system_prompt"],
-        "include_img": include_img,
-        "img_list": img_list,
-    }
 
     # 创建验证函数
     validate_func = create_category_validate_func(category_all)
 
-    # 执行预测（带验证，验证失败会自动切换模型重试）
-    predict_results, _ = execute_with_repair(
-        dispatcher,
-        message_info,
-        predict_config["group_name"],
-        validate_func=validate_func,
-        fix_json_config=fix_json_config,
-    )
+    predict_results = []
+    # "group_names" 固定 ["with_image", "without_image"]
+
+    if image_url:
+        include_img = True
+        img_list = [image_url]
+        message_info = {
+            "user_text": user_text,
+            "system_prompt": system_prompt,
+            "include_img": include_img,
+            "img_list": img_list,
+        }
+        try:
+            predict_results, _ = execute_with_repair(
+                dispatcher,
+                message_info,
+                "with_image",
+                validate_func=validate_func,
+                fix_json_config=fix_json_config,
+            )
+        except:
+            print(f"预测失败，尝试去掉图片后预测……")
+            predict_results, _ = execute_with_repair(
+                dispatcher,
+                message_info,
+                "without_image",
+                validate_func=validate_func,
+                fix_json_config=fix_json_config,
+            )
+    else:
+        include_img = False
+        img_list = []
+        message_info = {
+            "user_text": user_text,
+            "system_prompt": system_prompt,
+            "include_img": include_img,
+            "img_list": img_list,
+        }
+        predict_results, _ = execute_with_repair(
+            dispatcher,
+            message_info,
+            "without_image",
+            validate_func=validate_func,
+            fix_json_config=fix_json_config,
+        )
 
     return predict_results
 
