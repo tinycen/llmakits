@@ -105,7 +105,7 @@ ModelDispatcher 提供了两种使用方式，推荐使用 `execute_with_group` 
 **方式一：使用模型组（推荐）**
 
 ```python
-from llmakits.dispatcher import ModelDispatcher
+from llmakits import ModelDispatcher
 
 # 创建调度器实例并加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -153,7 +153,7 @@ message_info = {
 **方式二：手动传入模型列表**
 
 ```python
-from llmakits.dispatcher import ModelDispatcher
+from llmakits import ModelDispatcher
 
 # 创建调度器实例
 dispatcher = ModelDispatcher()
@@ -171,7 +171,7 @@ result, tokens = dispatcher.execute_task(message_info, my_models)
 #### 高级用法：结果验证和格式化
 
 ```python
-from llmakits.dispatcher import ModelDispatcher
+from llmakits import ModelDispatcher
 
 # 创建调度器
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -198,6 +198,52 @@ result, tokens = dispatcher.execute_with_group(
 print(f"验证通过的结果: {result}")
 print(f"使用token数: {tokens}")
 ```
+
+#### 增强版调度策略：dispatcher_with_repair
+
+```python
+from llmakits import dispatcher_with_repair
+
+# 创建调度器
+from llmakits import ModelDispatcher
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 准备消息
+message_info = {
+    "system_prompt": "你是一个JSON数据生成专家",
+    "user_text": "请生成一个包含产品信息的JSON对象"
+}
+
+# 使用增强版调度策略 - 自动修复JSON错误
+try:
+    result, tokens = dispatcher_with_repair(
+        dispatcher=dispatcher,
+        message_info=message_info,
+        group_name="generate_json",  # 主模型组名称
+        validate_func=None,  # 可选：自定义验证函数
+        fix_json_config={
+            "group_name": "fix_json",  # 修复模型组名称
+            "system_prompt": "你是一个JSON修复专家，请修复下面错误的JSON格式",
+            "example_json": '{"name": "产品名称", "price": 99.99}'  # 可选：JSON示例
+        }
+    )
+    print(f"修复后的结果: {result}")
+    print(f"使用token数: {tokens}")
+except Exception as e:
+    print(f"所有模型和修复尝试均失败: {e}")
+```
+
+**增强版调度策略特点：**
+
+1. **自动修复JSON错误**：当主模型返回格式错误的JSON时，自动调用修复模型组进行修复
+2. **多模型支持**：每个失败的模型都会尝试修复，确保所有主模型都有机会尝试
+3. **独立修复流程**：使用独立的修复调度器，避免状态混乱
+4. **详细错误处理**：区分JSON错误和其他类型错误，采取不同的处理策略
+
+**使用场景：**
+- 需要生成结构化JSON数据的任务
+- 对JSON格式要求严格的场景
+- 希望提高任务成功率的自动化流程
 
 ### 4. 直接使用模型客户端
 
@@ -300,10 +346,7 @@ categories = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "商品标题", "image_url": ""},  # 商品信息字典
     cat_tree=cat_tree,
-    predict_config={
-        "system_prompt": "预测商品类目",
-        "group_name": "predict_category"
-    }
+    system_prompt="你是一个商品分类专家，请根据商品标题预测合适的商品类目"
 )
 
 # 预测商品类目（带JSON修复功能）
@@ -311,8 +354,20 @@ categories_with_fix = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "护发喷雾", "image_url": "https://example.com/image.jpg"},
     cat_tree=cat_tree,
+    system_prompt="你是一个商品分类专家，请根据商品标题和图片预测合适的商品类目",
+    fix_json_config={
+        "system_prompt": "你是一个JSON格式修复专家，请修复下面错误的JSON格式",
+        "group_name": "fix_json"
+    }
+)
+
+# 梯度预测商品类目（逐级预测）
+categories_gradual = predict_cat_gradual(
+    dispatcher=dispatcher,
+    product={"title": "智能手机", "image_url": "https://example.com/image.jpg"},
+    cat_tree=cat_tree,
     predict_config={
-        "system_prompt": "你是一个商品分类专家，请根据商品标题和图片预测合适的商品类目",
+        "system_prompt": "你是一个商品分类专家，请根据商品标题和图片逐级预测合适的商品类目",
         "group_name": "predict_category"
     },
     fix_json_config={

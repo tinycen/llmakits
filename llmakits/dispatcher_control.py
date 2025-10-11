@@ -17,7 +17,7 @@ from .dispatcher import ModelDispatcher
 from typing import Dict, Any, Optional, Callable
 
 
-def execute_with_repair(
+def dispatcher_with_repair(
     dispatcher: ModelDispatcher,
     message_info: Dict[str, Any],
     group_name: str,
@@ -35,17 +35,15 @@ def execute_with_repair(
 
     Args:
         dispatcher: 主模型调度器
-        repair_dispatcher: 修复模型调度器（独立实例）
         message_info: 消息信息
         group_name: 主模型组名称
+        validate_func: 可选的验证函数
         fix_json_config: 修复配置
             {
                 "group_name": "fix_json",  # 修复模型组名称
                 "system_prompt": "你是JSON修复专家...",
                 "example_json": '{"key": "value"}'  # 可选：JSON示例
             }
-        max_repair_attempts: 最大修复尝试次数（全局限制）
-        verbose: 是否打印详细日志
 
     Returns:
         (返回消息, token总数)
