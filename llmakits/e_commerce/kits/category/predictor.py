@@ -11,6 +11,50 @@ from .utils import standardize_category_format, extr_cat_tree, get_category_dept
 from .validator import create_category_validate_func
 
 
+def _prepare_category_data(cat_tree: Any, max_depth: int = 3) -> Any:
+    """准备类目数据，根据深度标准化或提取"""
+    target_depth = min(get_category_depth(cat_tree), max_depth)
+
+    if target_depth == 1:
+        return standardize_category_format(cat_tree)
+    else:
+        return extr_cat_tree(cat_tree, level=target_depth)
+
+
+def _create_message_info(
+    title: str, category_all: Any, system_prompt: str, image_url: str = ""
+) -> tuple[Dict[str, Any], str]:
+    """创建消息信息和用户文本"""
+    user_text = f"商品标题:{title},可选类目:{category_all}"
+
+    message_info = {
+        "user_text": user_text,
+        "system_prompt": system_prompt,
+        "include_img": bool(image_url),
+        "img_list": [image_url] if image_url else [],
+    }
+
+    return message_info, user_text
+
+
+def _execute_prediction(
+    dispatcher: ModelDispatcher,
+    message_info: Dict[str, Any],
+    group_name: str,
+    validate_func: Optional[Any] = None,
+    fix_json_config: dict = {},
+) -> List[Dict[str, Any]]:
+    """执行预测并返回结果"""
+    predict_results, _ = execute_with_repair(
+        dispatcher,
+        message_info,
+        group_name,
+        validate_func=validate_func,
+        fix_json_config=fix_json_config,
+    )
+    return predict_results
+
+
 def predict_cat_direct(
     dispatcher: ModelDispatcher,
     product: dict,
@@ -38,70 +82,28 @@ def predict_cat_direct(
     Returns:
         预测的类目结果列表
     """
-    # 检测类目树的最大深度
-    max_depth = get_category_depth(cat_tree)
-    target_depth = min(max_depth, 3)
-
-    if target_depth == 1:
-        category_all = standardize_category_format(cat_tree)
-    else:
-        category_all = extr_cat_tree(cat_tree, level=target_depth)
-
-    # 准备消息
-    title = product.get("title", "")
-    image_url = product.get("image_url", "")
-    user_text = f"商品标题:{title},可选类目:{category_all}"
+    # 准备类目数据
+    category_all = _prepare_category_data(cat_tree)
 
     # 创建验证函数
     validate_func = create_category_validate_func(category_all)
 
-    predict_results = []
-    # "group_names" 固定 ["with_image", "without_image"]
+    # 准备消息信息
+    title = product.get("title", "")
+    image_url = product.get("image_url", "")
+    message_info, _ = _create_message_info(title, category_all, system_prompt, image_url)
 
-    if image_url:
-        include_img = True
-        img_list = [image_url]
-        message_info = {
-            "user_text": user_text,
-            "system_prompt": system_prompt,
-            "include_img": include_img,
-            "img_list": img_list,
-        }
-        try:
-            predict_results, _ = execute_with_repair(
-                dispatcher,
-                message_info,
-                "with_image",
-                validate_func=validate_func,
-                fix_json_config=fix_json_config,
-            )
-        except:
-            print(f"预测失败，尝试去掉图片后预测……")
-            predict_results, _ = execute_with_repair(
-                dispatcher,
-                message_info,
-                "without_image",
-                validate_func=validate_func,
-                fix_json_config=fix_json_config,
-            )
-    else:
-        include_img = False
-        img_list = []
-        message_info = {
-            "user_text": user_text,
-            "system_prompt": system_prompt,
-            "include_img": include_img,
-            "img_list": img_list,
-        }
-        predict_results, _ = execute_with_repair(
-            dispatcher,
-            message_info,
-            "without_image",
-            validate_func=validate_func,
-            fix_json_config=fix_json_config,
-        )
-
-    return predict_results
+    # 执行预测
+    try:
+        group_name = "with_image" if image_url else "without_image"
+        return _execute_prediction(dispatcher, message_info, group_name, validate_func, fix_json_config)
+    except Exception:
+        if image_url:
+            print("预测失败，尝试去掉图片后预测……")
+            message_info["include_img"] = False
+            message_info["img_list"] = []
+            return _execute_prediction(dispatcher, message_info, "without_image", validate_func, fix_json_config)
+        return []
 
 
 def predict_cat_gradual(
