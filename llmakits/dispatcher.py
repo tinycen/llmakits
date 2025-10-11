@@ -1,12 +1,21 @@
 """
-模型调度器
-负责多模型故障转移和负载均衡
+模型调度器 - 支持索引控制和详细状态返回
 """
 
-from typing import List, Dict, Any, Optional, Callable, Union
+from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
 from funcguard.printer import print_line, print_block
 from .message import convert_to_json
 from .load_model import load_models
+
+
+class ExecutionResult(NamedTuple):
+    """执行结果包装类"""
+
+    return_message: Any = None  # 返回的消息内容
+    total_tokens: int = 0  # 使用的token总数
+    last_tried_index: int = -1  # 最后尝试的模型索引
+    success: bool = False  # 是否成功
+    error: Optional[Exception] = None  # 错误信息（失败时保留）
 
 
 class ModelDispatcher:
@@ -67,7 +76,7 @@ class ModelDispatcher:
             next_sdk_name = next_model_info.get('sdk_name', 'unknown_sdk')
             next_model_name = next_model_info.get('model_name', 'unknown_model')
             next_base_model_info = f"{current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
-            print_block("Next model", next_base_model_info, "> ", 20)
+            print_block("Next model", next_base_model_info, "> ", 15)
 
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
@@ -76,40 +85,75 @@ class ModelDispatcher:
         llm_models: List[Dict[str, Any]],
         format_json: bool = False,
         validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
-    ) -> tuple[Any, int]:
+        start_index: int = 0,  # 新增：起始索引
+        return_detailed: bool = False,  # 是否返回详细结果
+    ) -> Union[tuple[Any, int], ExecutionResult]:
         """
         执行任务 - 多模型调度器支持故障转移和重试
 
         Args:
-            message_info:
-                { "system_prompt": "", "user_text": "", "include_img": False, "img_list": [] }
-            llm_models: LLM模型列表，每个元素包含model、sdk_name等
+            message_info: 消息信息字典
+            llm_models: LLM模型列表
             format_json: 是否格式化为JSON
-            validate_func: 结果验证函数，可返回tuple[bool, Any]。
-                        bool：True表示验证通过，False表示验证失败
-                        Any：验证通过的值
+            validate_func: 结果验证函数
+            start_index: 从第N个模型开始执行（默认0，即第一个）
+            return_detailed: 是否返回详细结果（ExecutionResult对象）
 
         Returns:
-            (返回消息, token总数)
+            如果 return_detailed=False: (返回消息, token总数)
+            如果 return_detailed=True: ExecutionResult对象
         """
         models_num = len(llm_models)
 
-        for idx, model_info in enumerate(llm_models):
+        # 验证起始索引
+        if start_index < 0 or start_index >= models_num:
+            error = ValueError(f"起始索引 {start_index} 超出范围 [0, {models_num-1}]")
+            if return_detailed:
+                return ExecutionResult(success=False, error=error)
+            raise error
+
+        # 从指定索引开始遍历
+        for idx in range(start_index, models_num):
+            model_info = llm_models[idx]
             sdk_name = model_info.get('sdk_name', 'unknown_sdk')
             model_name = model_info.get('model_name', 'unknown_model')
             base_model_info = f"{idx+1}/{models_num} Model {sdk_name} : {model_name}"
+
             try:
                 return_message, total_tokens = model_info["model"].send_message([], message_info)
-                if format_json:
-                    return_message = convert_to_json(return_message)
 
-                # 如果有校验函数，校验不通过则继续下一个模型
+                if format_json:
+                    try:
+                        return_message = convert_to_json(return_message)
+                    except Exception as json_error:
+                        if return_detailed:
+                            # 返回详细结果，包含原始消息和错误信息
+                            return ExecutionResult(
+                                return_message=return_message,
+                                total_tokens=total_tokens,
+                                last_tried_index=idx,
+                                error=json_error,
+                            )
+                        else:
+                            # 传统模式：继续尝试下一个模型
+                            content = "JSON解析失败, trying next model..."
+                            print_block(base_model_info, content)
+                            self.model_switch_count += 1
+                            self._print_next_model_info(llm_models, idx, models_num)
+                            continue
+
+                # 验证逻辑
                 if validate_func is not None:
                     is_valid, validated_value = validate_func(return_message)
 
                     if is_valid:
                         if validated_value:
-                            # 验证通过，直接返回验证通过的值
+                            if return_detailed:
+                                return ExecutionResult(
+                                    return_message=validated_value,
+                                    total_tokens=total_tokens,
+                                    success=True,
+                                )
                             return validated_value, total_tokens
                     else:
                         content = "输出结果：条件校验失败, trying next model ..."
@@ -119,6 +163,13 @@ class ModelDispatcher:
                         self._print_next_model_info(llm_models, idx, models_num)
                         continue
 
+                # 成功返回
+                if return_detailed:
+                    return ExecutionResult(
+                        return_message=return_message,
+                        total_tokens=total_tokens,
+                        success=True,
+                    )
                 return return_message, total_tokens
 
             except Exception as e:
@@ -143,36 +194,39 @@ class ModelDispatcher:
                     self.model_switch_count += 1
                     continue
                 else:
+                    # 最后一个模型也失败了
+                    if return_detailed:
+                        return ExecutionResult(success=False, error=e)
                     raise e
 
-        # 如果所有模型都失败
-        raise Exception("All models failed.")
+        # 如果所有模型都失败（理论上不会到这里）
+        error = Exception("All models failed.")
+        if return_detailed:
+            return ExecutionResult(success=False, error=error)
+        raise error
 
-    # 执行任务 - 模型组调度器
     def execute_with_group(
         self,
         message_info: Dict[str, Any],
         group_name: str,
         format_json: bool = False,
         validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
-    ) -> tuple[Any, int]:
+        start_index: int = 0,
+        return_detailed: bool = False,  # 是否返回详细结果
+    ) -> Union[tuple[Any, int], ExecutionResult]:
         """
-        使用内部model_groups执行任务，避免重复实例化导致的状态丢失
-
-        这是推荐的使用方式，因为：
-        1. 模型实例在dispatcher中缓存，避免重复实例化
-        2. 模型内部的API密钥切换状态会保持（同一个对象引用）
-        3. 多次调用不会丢失已切换的密钥状态
+        使用内部model_groups执行任务
 
         Args:
-            message_info:
-                { "system_prompt": "", "user_text": "", "include_img": False, "img_list": [] }
+            message_info: 消息信息字典
             group_name: 模型组名称
             format_json: 是否格式化为JSON
             validate_func: 结果验证函数
+            start_index: 从第N个模型开始执行
 
         Returns:
-            (返回消息, token总数)
+            如果 return_detailed=False: (返回消息, token总数)
+            如果 return_detailed=True: ExecutionResult对象
         """
         if not self.model_groups:
             raise Exception("没有可用的模型组，请先初始化dispatcher")
@@ -182,5 +236,11 @@ class ModelDispatcher:
         if not llm_models:
             raise Exception(f"未找到模型组: {group_name}")
 
-        # 使用现有的execute_task方法，传入group_name以便在API密钥用尽时删除模型
-        return self.execute_task(message_info, llm_models, format_json, validate_func)
+        return self.execute_task(
+            message_info,
+            llm_models,
+            format_json,
+            validate_func,
+            start_index=start_index,
+            return_detailed=return_detailed,
+        )
