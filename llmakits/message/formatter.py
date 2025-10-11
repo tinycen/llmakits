@@ -111,7 +111,7 @@ def convert_to_json(text: str) -> Any:
 
     print("无法解析为json格式:")
     print(text)
-    raise Exception("无法解析为json格式")
+    raise Exception("format_json_error,无法解析为json格式")
 
 
 def extract_field(message: Union[str, dict], *target_fields: str) -> Union[Any, Tuple[Any, ...]]:
