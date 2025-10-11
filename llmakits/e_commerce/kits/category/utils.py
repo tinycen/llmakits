@@ -2,7 +2,9 @@
 类目处理工具函数
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from ....dispatcher import ModelDispatcher
+from ....dispatcher_control import execute_with_repair
 
 
 def standardize_category_format(cat_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -99,3 +101,47 @@ def get_category_depth(cat_tree: Any) -> int:
                 break
 
     return max_depth
+
+
+def prepare_category_data(cat_tree: Any, max_depth: int = 3) -> Any:
+    """准备类目数据，根据深度标准化或提取"""
+    target_depth = min(get_category_depth(cat_tree), max_depth)
+
+    if target_depth == 1:
+        return standardize_category_format(cat_tree)
+    else:
+        return extr_cat_tree(cat_tree, level=target_depth)
+
+
+def create_message_info(
+    title: str, category_all: Any, system_prompt: str, image_url: str = ""
+) -> tuple[Dict[str, Any], str]:
+    """创建消息信息和用户文本"""
+    user_text = f"商品标题:{title},可选类目:{category_all}"
+
+    message_info = {
+        "user_text": user_text,
+        "system_prompt": system_prompt,
+        "include_img": bool(image_url),
+        "img_list": [image_url] if image_url else [],
+    }
+
+    return message_info, user_text
+
+
+def execute_prediction(
+    dispatcher: ModelDispatcher,
+    message_info: Dict[str, Any],
+    group_name: str,
+    validate_func: Optional[Any] = None,
+    fix_json_config: dict = {},
+) -> List[Dict[str, Any]]:
+    """执行预测并返回结果"""
+    predict_results, _ = execute_with_repair(
+        dispatcher,
+        message_info,
+        group_name,
+        validate_func=validate_func,
+        fix_json_config=fix_json_config,
+    )
+    return predict_results
