@@ -275,7 +275,7 @@ is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 电商工具函数现在支持使用模型组名称，更加简洁：
 
 ```python
-from llmakits.e_commerce import generate_title, generate_html, fill_attr,predict_category, translate_options
+from llmakits.e_commerce import generate_title, generate_html, fill_attr,predict_cat_direct, predict_cat_gradual, translate_options
 
 # 创建调度器 - 加载配置
 dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
@@ -296,7 +296,7 @@ title = generate_title(
 
 # 预测商品类目
 cat_tree = {}  # 类目树数据
-categories = predict_category(
+categories = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "商品标题", "image_url": ""},  # 商品信息字典
     cat_tree=cat_tree,
@@ -307,7 +307,7 @@ categories = predict_category(
 )
 
 # 预测商品类目（带JSON修复功能）
-categories_with_fix = predict_category(
+categories_with_fix = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "护发喷雾", "image_url": "https://example.com/image.jpg"},
     cat_tree=cat_tree,

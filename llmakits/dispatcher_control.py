@@ -14,12 +14,14 @@ JSON 错误 → 继续下一个模型
 
 from typing import Dict, Any
 from .dispatcher import ModelDispatcher
+from typing import Dict, Any, Optional, Callable
 
 
 def execute_with_repair(
     dispatcher: ModelDispatcher,
     message_info: Dict[str, Any],
     group_name: str,
+    validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
     fix_json_config: Dict[str, Any] = {},
 ) -> tuple[Any, int]:
     """
@@ -66,7 +68,12 @@ def execute_with_repair(
 
         # 执行主模型
         result = dispatcher.execute_with_group(
-            message_info, group_name, format_json=True, start_index=current_index, return_detailed=True
+            message_info,
+            group_name,
+            format_json=True,
+            validate_func=validate_func,
+            start_index=current_index,
+            return_detailed=True,
         )
 
         # 成功！

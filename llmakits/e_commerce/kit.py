@@ -3,7 +3,7 @@ from .validators.string_validator import contains_chinese
 from .validators.value_validator import validate_dict
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
-from .kits.cat_kit import predict_category, extr_cat_tree
+from .kits.cat_kit import predict_cat_direct, extr_cat_tree
 
 
 def translate_options(

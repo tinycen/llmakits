@@ -4,7 +4,7 @@ from .validators.html_validator import validate_html, validate_html_fix
 from .kits.title_kit import check_title, shorten_title, generate_title
 from .kits.des_kit import generate_html
 from .kits.attribute_kit import fill_attr
-from .kits.cat_kit import predict_category
+from .kits.cat_kit import predict_cat_direct, predict_cat_gradual
 
 __all__ = [
     "contains_chinese",
@@ -16,5 +16,6 @@ __all__ = [
     "generate_title",
     "generate_html",
     "fill_attr",
-    "predict_category",
+    "predict_cat_direct",
+    "predict_cat_gradual",
 ]
