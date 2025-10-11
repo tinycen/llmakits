@@ -1,9 +1,7 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import List
 from .validators.string_validator import contains_chinese
-from .validators.value_validator import validate_dict
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
-from .kits.cat_kit import predict_cat_direct, extr_cat_tree
 
 
 def translate_options(
@@ -39,7 +37,7 @@ def translate_options(
         else:
             return False, None
 
-    return_message, _ = dispatcher.execute_with_group(
+    return_message, _ = dispatcher.execute_with_group(  # type: ignore
         {"user_text": user_text, "system_prompt": system_prompt},
         group_name,
         format_json=True,
