@@ -2,6 +2,7 @@
 类目处理工具函数
 """
 
+import re
 from typing import Any, Dict, List, Optional
 from ....dispatcher import ModelDispatcher
 from ....dispatcher_control import dispatcher_with_repair
@@ -145,3 +146,38 @@ def execute_prediction(
         fix_json_config=fix_json_config,
     )
     return predict_results
+
+
+# 匹配召回策略
+def match_recall_strategy(
+    category_all: list,
+    title: str,
+) -> List[Dict[str, Any]]:
+    '''根据商品标题匹配召回类目
+    Args:
+        category_all: 标准化后的所有类目列表，
+            示例：[{'cat_id': '……', 'cat_name': '……'}]
+        title: 商品标题
+    Returns:
+        匹配的类目列表，示例：[{'cat_id': '……', 'cat_name': '……'}]
+    '''
+    # 使用正则表达式分割单词，支持空格和逗号分隔
+    # 正则表达式 r'[,，\s]+' 工作原理：
+    # - [,，\s]+ 匹配一个或多个连续的字符，这些字符可以是：
+    #   - , 英文逗号
+    #   - ， 中文逗号
+    #   - \s 任何空白字符（包括空格、制表符、换行符等）
+    # - + 表示匹配一个或多个这样的字符
+    # 这样可以处理同时存在逗号和空格的情况，如"手机, 电脑 平板"
+    words = re.split(r'[,，\s]+', title.strip())
+    # 去除空字符串并去重
+    words = list(set([word for word in words if word]))
+
+    matched_results = []
+    for category in category_all:
+        cat_name = category["cat_name"]
+        for word in words:
+            if word.lower() in cat_name.lower():
+                matched_results.append(category)
+                break
+    return matched_results
