@@ -182,3 +182,36 @@ def match_recall(
                 break
     print(f"通过split分割，匹配到{len(matched_results)}个类目")
     return matched_results
+
+
+def match_recall_merge(
+    category_all: list,
+    title: str,
+    user_suggest_cats: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """合并匹配结果和用户建议类目，并去重
+
+    Args:
+        category_all: 标准化后的所有类目列表
+        title: 商品标题
+        user_suggest_cats: 用户建议的类目列表
+
+    Returns:
+        去重后的类目列表
+    """
+    matched_results = match_recall(category_all, title)
+
+    if not user_suggest_cats:
+        return matched_results
+
+    category_recall = matched_results + user_suggest_cats
+    # 去重后的类目
+    seen_ids = set()
+    category_all = []
+    for cat in category_recall:
+        cat_id = cat.get("cat_id", "")
+        if cat_id and cat_id not in seen_ids:
+            seen_ids.add(cat_id)
+            category_all.append(cat)
+
+    return category_all
