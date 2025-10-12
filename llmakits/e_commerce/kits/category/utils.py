@@ -149,7 +149,7 @@ def execute_prediction(
 
 
 # 匹配召回策略
-def match_recall_strategy(
+def match_recall(
     category_all: list,
     title: str,
 ) -> List[Dict[str, Any]]:
