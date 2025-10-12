@@ -213,5 +213,6 @@ def match_recall_merge(
         if cat_id and cat_id not in seen_ids:
             seen_ids.add(cat_id)
             category_all.append(cat)
+    print(f"通过 match_recall_merge 合并，总计召回类目：{len(category_all)}")
 
     return category_all
