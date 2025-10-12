@@ -4,7 +4,7 @@
 
 from typing import Any, Dict, List, Optional
 from ....dispatcher import ModelDispatcher
-from ....dispatcher_control import execute_with_repair
+from ....dispatcher_control import dispatcher_with_repair
 
 
 def standardize_category_format(cat_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -137,7 +137,7 @@ def execute_prediction(
     fix_json_config: dict = {},
 ) -> List[Dict[str, Any]]:
     """执行预测并返回结果"""
-    predict_results, _ = execute_with_repair(
+    predict_results, _ = dispatcher_with_repair(
         dispatcher,
         message_info,
         group_name,
