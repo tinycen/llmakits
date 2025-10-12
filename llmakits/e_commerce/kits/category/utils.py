@@ -180,4 +180,5 @@ def match_recall_strategy(
             if word.lower() in cat_name.lower():
                 matched_results.append(category)
                 break
+    print(f"通过split分割，匹配到{len(matched_results)}个类目")
     return matched_results
