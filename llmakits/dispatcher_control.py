@@ -60,9 +60,13 @@ def dispatcher_with_repair(
 
     current_index = 0
 
-    total_models_main = len(dispatcher.model_groups[group_name])
-
-    while current_index < total_models_main:
+    while True:
+        # 每次循环都重新获取模型总数，因为模型可能被删除
+        total_models_main = len(dispatcher.model_groups[group_name])
+        
+        # 如果没有可用的模型了，退出循环
+        if total_models_main == 0 or current_index >= total_models_main:
+            break
 
         # 执行主模型
         result = dispatcher.execute_with_group(
