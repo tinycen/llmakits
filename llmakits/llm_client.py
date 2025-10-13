@@ -98,6 +98,8 @@ class BaseOpenai(BaseClient):
         super().__init__(platform, model_name)
         self.base_url = base_url
         self.api_keys = api_keys
+        self.request_timeout = 150  # 新增：API 请求超时时间
+        self.max_retries = 3  # 新增：API 请求超时时间
 
         # 处理流式输出
         if platform == "modelscope":
@@ -127,10 +129,14 @@ class BaseOpenai(BaseClient):
         if not self.api_keys:
             raise Exception("没有可用的API密钥")
         self.api_key = self.api_keys[0]
-        if self.platform == "zhipu":
-            self.client = ZhipuAI(api_key=self.api_key)
-        else:
-            self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        if self.platform == "zhipu" :
+            self.client = ZhipuAI( api_key = self.api_key,
+                                   timeout = self.request_timeout,
+                                   max_retries = self.max_retries )
+        else :
+            self.client = OpenAI( api_key = self.api_key, base_url = self.base_url,
+                                  timeout = self.request_timeout,
+                                  max_retries = self.max_retries )
 
     def switch_api_key(self):
         """切换API密钥并重新初始化客户端"""
