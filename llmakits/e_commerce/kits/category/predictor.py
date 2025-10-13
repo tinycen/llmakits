@@ -59,9 +59,11 @@ def predict_cat_direct(
     user_suggest_cats = predict_config.get("user_suggest_cats", [])
 
     if use_rag:
-        category_all = match_recall_merge(category_all, title, user_suggest_cats)
-        if not category_all:
-            raise ValueError("RAG匹配结果为空，且用户建议类目也为空，无法进行预测")
+        category_all = user_suggest_cats
+        # matched_results = match_recall(category_all, title)
+        # category_all = match_recall_merge(matched_results, user_suggest_cats)
+        # if not category_all:
+        #     raise ValueError("RAG匹配结果为空，且用户建议类目也为空，无法进行预测")
 
     # 创建验证函数
     validate_func = create_category_validate_func(category_all)

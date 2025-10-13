@@ -2,7 +2,6 @@
 类目处理工具函数
 """
 
-import re
 from typing import Any, Dict, List, Optional
 from ....dispatcher import ModelDispatcher
 from ....dispatcher_control import dispatcher_with_repair
@@ -151,27 +150,16 @@ def execute_prediction(
 # 匹配召回策略
 def match_recall(
     category_all: list,
-    title: str,
+    words: list,
 ) -> List[Dict[str, Any]]:
     '''根据商品标题匹配召回类目
     Args:
         category_all: 标准化后的所有类目列表，
             示例：[{'cat_id': '……', 'cat_name': '……'}]
-        title: 商品标题
+        words: 商品标题分词后的单词列表
     Returns:
         匹配的类目列表，示例：[{'cat_id': '……', 'cat_name': '……'}]
     '''
-    # 使用正则表达式分割单词，支持空格和逗号分隔
-    # 正则表达式 r'[,，\s]+' 工作原理：
-    # - [,，\s]+ 匹配一个或多个连续的字符，这些字符可以是：
-    #   - , 英文逗号
-    #   - ， 中文逗号
-    #   - \s 任何空白字符（包括空格、制表符、换行符等）
-    # - + 表示匹配一个或多个这样的字符
-    # 这样可以处理同时存在逗号和空格的情况，如"手机, 电脑 平板"
-    words = re.split(r'[,，\s]+', title.strip())
-    # 去除空字符串并去重
-    words = list(set([word for word in words if word]))
 
     matched_results = []
     for category in category_all:
@@ -185,21 +173,18 @@ def match_recall(
 
 
 def match_recall_merge(
-    category_all: list,
-    title: str,
+    matched_results: List[Dict[str, Any]],
     user_suggest_cats: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """合并匹配结果和用户建议类目，并去重
 
     Args:
-        category_all: 标准化后的所有类目列表
-        title: 商品标题
+        matched_results: 匹配的类目列表
         user_suggest_cats: 用户建议的类目列表
 
     Returns:
         去重后的类目列表
     """
-    matched_results = match_recall(category_all, title)
 
     if not user_suggest_cats:
         return matched_results
