@@ -97,11 +97,19 @@ def _build_content_by_provider(
     elif provider_name == "ollama":
         system_content = system_prompt
         user_content = user_text
-        img_list = batch_download_encode_base64(img_list)
+        try:
+            img_list = batch_download_encode_base64(img_list)
+        except Exception as e:
+            print(f"Ollama图片批量转换base64失败: {e}")
+            raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
     elif provider_name == "openrouter":
         # openrouter 需要base64格式的图片
-        img_list = convert_images_to_base64(img_list)
+        try:
+            img_list = convert_images_to_base64(img_list)
+        except Exception as e:
+            print(f"OpenRouter图片转换base64失败: {e}")
+            raise Exception(f"图片下载或转换base64失败，url：{img_list}")
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
         user_content.append({"type": "text", "text": user_text})
         system_content = [{"type": "text", "text": system_prompt}]
@@ -130,6 +138,8 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
 
     processed_img_list = []
     valid_extensions = ('.jpg', '.jpeg', '.png')
+    successful_conversions = 0  # 成功转换的图片数量
+    total_valid_images = 0  # 需要转换的有效图片数量
 
     for img_url in img_list:
         # 检查是否已经是base64格式
@@ -142,6 +152,7 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
         # 检查是否为有效的图片URL
         img_lower = img_url.lower()
         if img_lower.endswith(valid_extensions):
+            total_valid_images += 1
             try:
                 # 下载并转换为base64
                 base64_str = download_encode_base64(img_url)
@@ -150,6 +161,7 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
                     mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
                     base64_url = f"data:{mime_type};base64,{base64_str}"
                     processed_img_list.append(base64_url)
+                    successful_conversions += 1
                     print(f"已将图片转换为base64格式: {img_url}")
                 else:
                     print(f"图片 {img_url} 转换为base64失败，保持原始URL")
@@ -159,6 +171,10 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
                 processed_img_list.append(img_url)
         else:
             processed_img_list.append(img_url)
+
+    # 只有当所有有效图片都转换失败时，才抛出异常
+    if total_valid_images > 0 and successful_conversions == 0:
+        raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
     return processed_img_list
 
