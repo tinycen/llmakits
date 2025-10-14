@@ -123,10 +123,11 @@ class ModelDispatcher:
             try:
                 if self.warning_time:
                     result, total_seconds = time_monitor(
-                        func=model_info["model"].send_message,
-                        args=[[], message_info],
-                        warning_threshold=self.warning_time,
-                        print_mode=0,  # 0：不打印警告信息
+                        self.warning_time,
+                        0,  # 0：不打印警告信息
+                        model_info["model"].send_message,
+                        [],
+                        message_info,
                     )
                     return_message, total_tokens = result
                     if total_seconds > self.warning_time:
