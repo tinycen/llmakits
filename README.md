@@ -12,6 +12,7 @@
 - 📊 **消息处理**: 强大的消息格式化、验证和提取功能；
 - 🛡️ **错误处理**: 完善的重试机制和异常处理；
 - 📝 **流式输出**: 支持流式响应处理；
+- ⏱️ **性能监控**: 支持设置耗时警告阈值，监控模型响应性能；
 - 🎯 **电商工具**: 内置电商场景专用工具集；
 - 💡 **状态保持**: 模型实例缓存，避免重复实例化，保持API密钥切换状态。
 
@@ -198,6 +199,42 @@ result, tokens = dispatcher.execute_with_group(
 print(f"验证通过的结果: {result}")
 print(f"使用token数: {tokens}")
 ```
+
+#### 高级用法：耗时警告监控
+
+```python
+from llmakits import ModelDispatcher
+
+# 创建调度器并设置耗时警告阈值（单位：秒）
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+dispatcher.warning_time = 30  # 设置30秒为耗时警告阈值
+
+# 准备消息
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请详细介绍Python编程语言及其生态系统"
+}
+
+# 执行任务 - 当模型执行时间超过30秒时会显示警告
+result, tokens = dispatcher.execute_with_group(message_info, group_name="generate_title")
+print(f"结果: {result}")
+print(f"使用token数: {tokens}")
+
+# 查看模型切换次数
+print(f"模型切换次数: {dispatcher.model_switch_count}")
+```
+
+**耗时警告功能特点：**
+
+1. **性能监控**: 当模型执行时间超过设定阈值时，自动显示警告信息
+2. **灵活配置**: 可以根据业务需求设置不同的警告阈值
+3. **不影响执行**: 警告信息不会中断任务执行，仅作为性能提示
+4. **详细报告**: 警告信息包含模型名称和实际执行时间
+
+**使用场景：**
+- 监控模型响应性能，及时发现性能问题
+- 在生产环境中跟踪异常耗时的请求
+- 优化模型选择和配置，提高整体响应速度
 
 #### 增强版调度策略：dispatcher_with_repair
 
