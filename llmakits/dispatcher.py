@@ -3,7 +3,7 @@
 """
 
 from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
-from funcguard.printer import print_line, print_block
+from funcguard import print_line, print_block, time_monitor
 from .message import convert_to_json
 from .load_model import load_models
 
@@ -30,6 +30,7 @@ class ModelDispatcher:
     ):
         self.model_switch_count = 0
         self.exhausted_models = []
+        self.warning_time = None  # 用于 显示超时警告的阈值，单位秒
 
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys)
@@ -120,7 +121,18 @@ class ModelDispatcher:
             base_model_info = f"{idx+1}/{models_num} Model {sdk_name} : {model_name}"
 
             try:
-                return_message, total_tokens = model_info["model"].send_message([], message_info)
+                if self.warning_time:
+                    return_message, total_tokens, total_seconds = time_monitor(
+                        func=model_info["model"].send_message,
+                        args=[[], message_info],
+                        warning_threshold=self.warning_time,
+                        print_mode=0,  # 0：不打印警告信息
+                    )
+                    if total_seconds > self.warning_time:
+                        content = f"{sdk_name} : {model_name} 执行耗时 {total_seconds:.2f} 秒"
+                        print_block("Warning-耗时操作", content)
+                else:
+                    return_message, total_tokens = model_info["model"].send_message([], message_info)
 
                 if format_json:
                     try:
