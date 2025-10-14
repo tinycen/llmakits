@@ -122,15 +122,16 @@ class ModelDispatcher:
 
             try:
                 if self.warning_time:
-                    return_message, total_tokens, total_seconds = time_monitor(
+                    result, total_seconds = time_monitor(
                         func=model_info["model"].send_message,
                         args=[[], message_info],
                         warning_threshold=self.warning_time,
                         print_mode=0,  # 0：不打印警告信息
                     )
+                    return_message, total_tokens = result
                     if total_seconds > self.warning_time:
-                        content = f"{sdk_name} : {model_name} 执行耗时 {total_seconds:.2f} 秒"
-                        print_block("Warning-耗时操作", content)
+                        content = f"{sdk_name} : {model_name} execute_task took {total_seconds:.2f} s"
+                        print_block("Warning > > Time-consuming operation", content)
                 else:
                     return_message, total_tokens = model_info["model"].send_message([], message_info)
 
