@@ -131,7 +131,7 @@ class ModelDispatcher:
                     )
                     return_message, total_tokens = result
                     if total_seconds > self.warning_time:
-                        content = f"{sdk_name} : {model_name} execute_task took {total_seconds:.2f} s"
+                        content = f"{sdk_name} : {model_name} execute_task took {total_seconds}s"
                         print_block("Warning: Time-consuming operation", content)
                 else:
                     return_message, total_tokens = model_info["model"].send_message([], message_info)
