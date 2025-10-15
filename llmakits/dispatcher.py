@@ -77,7 +77,7 @@ class ModelDispatcher:
             next_sdk_name = next_model_info.get('sdk_name', 'unknown_sdk')
             next_model_name = next_model_info.get('model_name', 'unknown_model')
             next_base_model_info = (
-                f"Next model > {current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
+                f"Next model : \n {current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
             )
             print_line(".")
             print(next_base_model_info)
