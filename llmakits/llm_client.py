@@ -122,8 +122,14 @@ class BaseOpenai(BaseClient):
                 self.response_format = {"type": "json_object"}
             else:
                 self.response_format = {"type": "text"}
-            self.extra_body = {"response_format": self.response_format}
+            extra_body = {"response_format": self.response_format}
 
+            if "glm-4.5" in model_name or "glm-4.6" in model_name:
+                extra_body["thinking"] = {
+                    "type": "disabled",
+                }
+
+            self.extra_body = extra_body
         self.platform = platform
 
         # 初始化客户端
