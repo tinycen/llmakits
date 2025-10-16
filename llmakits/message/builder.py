@@ -103,19 +103,16 @@ def _build_content_by_provider(
             print(f"Ollama图片批量转换base64失败: {e}")
             raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
-    elif provider_name == "openrouter":
-        # openrouter 需要base64格式的图片
-        try:
-            img_list = convert_images_to_base64(img_list)
-        except Exception as e:
-            print(f"OpenRouter图片转换base64失败: {e}")
-            raise Exception(f"图片下载或转换base64失败，url：{img_list}")
-        user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
-        user_content.append({"type": "text", "text": user_text})
-        system_content = [{"type": "text", "text": system_prompt}]
-
+    # 兼容通用的 "openai", "zhipu", "modelscope" 格式
     else:
-        # 兼容通用的 "openai", "zhipu", "modelscope" 格式
+        if provider_name in ["openrouter", "gemini"]:
+            # openrouter 需要base64格式的图片
+            try:
+                img_list = convert_images_to_base64(img_list)
+            except Exception as e:
+                print(f"OpenRouter图片转换base64失败: {e}")
+                raise Exception(f"图片下载或转换base64失败，url：{img_list}")
+
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
         user_content.append({"type": "text", "text": user_text})
         system_content = [{"type": "text", "text": system_prompt}]
@@ -148,7 +145,7 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
             processed_img_list.append(img_url)
             print(f"图片已经是base64格式，无需转换: {img_url[:50]}...")
             continue
-            
+
         # 检查是否为有效的图片URL
         img_lower = img_url.lower()
         if img_lower.endswith(valid_extensions):
