@@ -109,12 +109,22 @@ class BaseOpenai(BaseClient):
 
             if model_name in ["Qwen/Qwen3-235B-A22B", "Qwen/Qwen3-32B"]:
                 extra_body = {"enable_thinking": False}
-                self.extra_body = {"extra_body": extra_body}
+                self.extra_body = {"extra_body": extra_body}  # extra_body 才是 client.chat.completions.create 的参数
 
         if platform == "dashscope":
             if model_name in ["qwen3-235b-a22b"] or "qwen-plus" in model_name:
                 extra_body = {"enable_thinking": False}
                 self.extra_body = {"extra_body": extra_body}
+
+        if platform == "gemini":
+            if "flash" in model_name:
+                extra_body = {"reasoning_effort": "none"}
+
+            elif "pro" in model_name:
+                extra_body = {"reasoning_effort": "low"}
+
+            # reasoning_effort 属于 client.chat.completions.create 的参数
+            self.extra_body = extra_body
 
         # 处理 response_format
         if platform == "zhipu":
