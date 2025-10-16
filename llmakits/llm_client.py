@@ -125,9 +125,7 @@ class BaseOpenai(BaseClient):
             extra_body = {"response_format": self.response_format}
 
             if "glm-4.5" in model_name or "glm-4.6" in model_name:
-                extra_body["thinking"] = {
-                    "type": "disabled",
-                }
+                extra_body["thinking"] = {"type": "disabled"}
 
             self.extra_body = extra_body
         self.platform = platform
