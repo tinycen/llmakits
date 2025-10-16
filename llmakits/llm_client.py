@@ -112,7 +112,7 @@ class BaseOpenai(BaseClient):
                 self.extra_body = {"extra_body": extra_body}  # extra_body 才是 client.chat.completions.create 的参数
 
         if platform == "dashscope":
-            if model_name in ["qwen3-235b-a22b"] or "qwen-plus" in model_name:
+            if model_name in ["qwen3-235b-a22b", "Qwen/Qwen3-32B"] or "qwen-plus" in model_name:
                 extra_body = {"enable_thinking": False}
                 self.extra_body = {"extra_body": extra_body}
 
