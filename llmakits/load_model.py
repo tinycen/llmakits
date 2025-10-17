@@ -127,6 +127,11 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
         if key in ('platform', 'model_name'):
             continue
 
+        # 处理流式输出参数
+        if key in ('stream', 'stream_real'):
+            params[key] = value
+            continue
+
         # 处理extra_前缀的参数（需要嵌套在extra_body中）
         if key.startswith('extra_'):
             real_key = key[len('extra_') :]
