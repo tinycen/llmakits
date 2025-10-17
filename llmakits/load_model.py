@@ -115,19 +115,26 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
         if pd.isna(value) or value == '' or value is None:
             continue
 
+        # 标准化布尔值：处理带引号的字符串格式
+        if isinstance(value, str):
+            str_value = value.strip()
+            if str_value == '"""True"""' or str_value == '"True"' or str_value == 'True':
+                value = True
+            elif str_value == '"""False"""' or str_value == '"False"' or str_value == 'False':
+                value = False
+
         # platform和model_name字段不添加到参数中（仅用于匹配）
         if key in ('platform', 'model_name'):
-            continue
-
-        # 处理布尔类型的流式输出参数
-        if key in ('stream', 'stream_real'):
-            params[key] = str(value).upper() == 'TRUE'
             continue
 
         # 处理extra_前缀的参数（需要嵌套在extra_body中）
         if key.startswith('extra_'):
             real_key = key[len('extra_') :]
-            extra_body_nested[real_key] = value
+            # 对布尔类型的extra参数进行特殊处理
+            if real_key == 'enable_thinking':
+                extra_body_nested[real_key] = bool(value) if isinstance(value, bool) else False
+            else:
+                extra_body_nested[real_key] = value
             continue
 
         # 处理response_format参数
