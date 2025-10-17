@@ -12,6 +12,11 @@ def standardize_category_format(cat_data: List[Dict[str, Any]]) -> List[Dict[str
     if not cat_data:
         return []
 
+    # 处理字符串类型的情况（可能是从JSON解析失败后的字符串）
+    if isinstance(cat_data, str):
+        print(f"警告: standardize_category_format接收到字符串而非列表: {cat_data[:50]}...")
+        return []
+
     first_item = cat_data[0]
     if isinstance(first_item, dict):
         if 'value' in first_item and 'label' in first_item:
@@ -144,6 +149,11 @@ def execute_prediction(
         validate_func=validate_func,
         fix_json_config=fix_json_config,
     )
+    
+    # 检查预测结果是否为空
+    if not predict_results:
+        print("警告: 预测结果为空列表")
+    
     return predict_results
 
 

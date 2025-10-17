@@ -49,6 +49,10 @@ def create_category_validate_func(category_all: List[Dict[str, Any]]) -> Callabl
         if predict_results:
             return True, predict_results
         else:
+            # 如果标准化后的消息不为空，但没有验证通过的类目，则验证失败
+            if standardized_message:
+                print("警告: 预测结果中，没有任何一个验证通过，以下是标准化后的预测结果（standardized_message）: ")
+                print(standardized_message)
             return False, predict_results
 
     return validate_func
