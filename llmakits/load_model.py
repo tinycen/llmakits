@@ -1,65 +1,77 @@
-from filekits.base_io.load import load_yaml
+from filekits.base_io import load_yaml
 import pandas as pd
 import fnmatch
 from typing import Dict, Any, Optional
-from llmakits.llm_client import BaseOpenai
+from .llm_client import BaseOpenai
 
 
 def load_global_config(global_config_path: str) -> pd.DataFrame:
     """
-    加载全局模型配置文件
+    加载全局模型配置文件，支持CSV和XLSX格式
 
     Args:
-        global_config_path: 全局配置文件路径（CSV格式）
+        global_config_path: 全局配置文件路径（CSV或XLSX格式）
 
     Returns:
         pd.DataFrame: 全局配置数据框
+
+    Raises:
+        TypeError: 如果global_config_path不是字符串类型
+        ValueError: 如果文件格式不支持
+        FileNotFoundError: 如果文件不存在
     """
-    if isinstance(global_config_path, str):
+
+    file_ext = global_config_path.lower().split('.')[-1]
+    if file_ext not in ['csv', 'xlsx']:
+        raise ValueError("全局配置文件必须是.csv或.xlsx格式")
+
+    if file_ext == 'xlsx':
+        return pd.read_excel(global_config_path)
+    else:
+        # 默认使用CSV格式读取
         return pd.read_csv(global_config_path)
-    return global_config_path
 
 
 def find_model_config(global_config: pd.DataFrame, platform: str, model_name: str) -> Optional[Dict[str, Any]]:
     """
     根据平台和模型名称查找配置，支持通配符匹配
-    
+
     匹配优先级：
     1. 精确匹配 (platform + model_name)
     2. 具体通配符匹配 (如 *pro*, *qwen-plus*)
     3. 通用通配符匹配 (*)
-    
+
     Args:
         global_config: 全局配置数据框
         platform: 平台名称
         model_name: 模型名称
-        
+
     Returns:
         Dict[str, Any]: 匹配的配置参数，如果没有匹配则返回None
     """
     # 过滤出当前平台的配置
     platform_configs = global_config[global_config['platform'] == platform]
-    
+
     if platform_configs.empty:
         return None
-    
+
     # 1. 首先尝试精确匹配
     exact_match = platform_configs[platform_configs['model_name'] == model_name]
     if not exact_match.empty:
         return exact_match.iloc[0].to_dict()
-    
+
     # 2. 尝试具体通配符匹配（非*的通配符模式）
     specific_patterns = platform_configs[platform_configs['model_name'] != '*']
     best_match = None
     best_specificity = -1  # 匹配特异性评分，越具体的模式评分越高
-    
+
     for _, row in specific_patterns.iterrows():
         config_model = row['model_name']
-        
+
         # 跳过精确匹配已经处理过的情况
         if config_model == model_name:
             continue
-            
+
         # 检查模型名称是否匹配（支持通配符）
         if fnmatch.fnmatch(model_name, config_model):
             # 计算特异性：通配符越少，特异性越高
@@ -67,15 +79,15 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
             if specificity > best_specificity:
                 best_specificity = specificity
                 best_match = row.to_dict()
-    
+
     if best_match:
         return best_match
-    
+
     # 3. 最后尝试通用通配符匹配 (*)
     universal_match = platform_configs[platform_configs['model_name'] == '*']
     if not universal_match.empty:
         return universal_match.iloc[0].to_dict()
-    
+
     return None
 
 
@@ -102,22 +114,22 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
         # 跳过空值
         if pd.isna(value) or value == '' or value is None:
             continue
-            
+
         # platform和model_name字段不添加到参数中（仅用于匹配）
         if key in ('platform', 'model_name'):
             continue
-            
+
         # 处理布尔类型的流式输出参数
         if key in ('stream', 'stream_real'):
             params[key] = str(value).upper() == 'TRUE'
             continue
-            
+
         # 处理extra_前缀的参数（需要嵌套在extra_body中）
         if key.startswith('extra_'):
-            real_key = key[len('extra_'):]
+            real_key = key[len('extra_') :]
             extra_body_nested[real_key] = value
             continue
-            
+
         # 处理response_format参数
         if key == 'response_format':
             if value == 'json':
@@ -125,12 +137,12 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 extra_body[key] = {"type": "text"}
             continue
-            
+
         # 处理thinking参数
         if key == 'thinking':
             extra_body[key] = {"type": value}
             continue
-            
+
         # 其他参数直接放入extra_body
         extra_body[key] = value
 
@@ -175,7 +187,7 @@ def load_models(models_config, model_keys, global_config=None):
 
     # 加载全局配置（如果提供）
     global_config_df = None
-    if global_config is not None:
+    if global_config:
         global_config_df = load_global_config(global_config)
 
     # 实例化模型缓存器
@@ -209,11 +221,7 @@ def load_models(models_config, model_keys, global_config=None):
 
                 # 创建新的模型实例，传入配置参数
                 mini_model = BaseOpenai(
-                    platform=sdk_name,
-                    base_url=base_url,
-                    api_keys=api_keys,
-                    model_name=model_name,
-                    **model_params
+                    platform=sdk_name, base_url=base_url, api_keys=api_keys, model_name=model_name, **model_params
                 )
 
                 # 将新创建的模型实例添加到全局缓存
