@@ -105,7 +105,7 @@ def _build_content_by_provider(
 
     # 兼容通用的 "openai", "zhipu", "modelscope" 格式
     else:
-        if provider_name in ["openrouter", "gemini"]:
+        if provider_name in ["openrouter", "gemini", "vercel", "github"]:
             # openrouter 需要base64格式的图片
             try:
                 img_list = convert_images_to_base64(img_list)
