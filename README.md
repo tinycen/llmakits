@@ -34,16 +34,21 @@ pip install --upgrade llmakits
 - 模型会按配置顺序依次尝试，直到成功
 
 ```yaml
-Models_config:
-  # 标题生成专用模型组
-  generate_title:
-    - sdk_name: "dashscope"
-      model_name: "qwen3-max-preview"
+# 标题生成专用模型组
+generate_title:
+  - sdk_name: "dashscope"
+    model_name: "qwen3-max-preview"
 
-  # 翻译专用模型组
-  translate_box:
-    - sdk_name: "modelscope"
-      model_name: "Qwen/Qwen3-32B"
+  - sdk_name: "zhipu"
+    model_name: "glm-4-plus"
+
+# 翻译专用模型组
+translate_box:
+  - sdk_name: "modelscope"
+    model_name: "Qwen/Qwen3-32B"
+
+  - sdk_name: "modelscope"
+    model_name: "deepseek-ai/DeepSeek-V3"
 ```
 
 **密钥配置文件** (`config/keys_config.yaml`):
@@ -52,11 +57,30 @@ Models_config:
 - 支持不同平台的独立配置
 
 ```yaml
-platform_name:
-  base_url: "api-endpoint-url"
-  api_keys:
-    - "api-key-1"
-    - "api-key-2"
+# 百度AI Studio平台
+aistudio:
+  base_url: "https://aistudio.baidu.com/llm/lmapi/v3"
+  api_keys: ["your-api-key-1", "your-api-key-2"]
+
+# 百度AI Studio应用平台
+aistudio_app:
+  base_url: "https://api-i0c6md2d80ndh773.aistudio-app.com/v1"
+  api_keys: ["your-api-key-1", "your-api-key-2"]
+
+# 阿里云DashScope平台
+dashscope:
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_keys: ["your-api-key-1", "your-api-key-2"]
+
+# ModelScope平台
+modelscope:
+  base_url: "https://api-inference.modelscope.cn/v1/"
+  api_keys: ["your-api-key-1", "your-api-key-2"]
+
+# 智谱AI平台
+zhipu:
+  base_url: ""  # 使用默认URL
+  api_keys: ["your-api-key-1", "your-api-key-2"]
 ```
 
 #### 错误处理和故障转移

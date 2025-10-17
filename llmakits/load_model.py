@@ -19,17 +19,13 @@ def load_models(models_config, model_keys):
     """
     # 检测参数类型，如果是字符串则进行加载
     if isinstance(models_config, str):
-        model_config = load_yaml(models_config)
-        models_config = model_config["Models_config"]
+        models_config = load_yaml(models_config)
 
     if isinstance(model_keys, str):
         model_keys = load_yaml(model_keys)
-        model_api_keys = model_keys["Api_keys"]
-    else:
-        model_api_keys = model_keys
     """
-    {'Models_config': {'option_type': [{'model_name': 'Qwen/Qwen2.5-32B-Instruct', 'sdk_name': 'modelscope'},
-    {'model_name': 'glm-4-flash-250414', 'sdk_name': 'zhipu'}]}}
+    {'option_type': [{'model_name': 'Qwen/Qwen2.5-32B-Instruct', 'sdk_name': 'modelscope'},
+        {'model_name': 'glm-4-flash-250414', 'sdk_name': 'zhipu'}]}
     """
     # 实例化模型缓存器
     model_instances = {}
@@ -41,8 +37,8 @@ def load_models(models_config, model_keys):
         for model_info in model_list:
             sdk_name = model_info["sdk_name"]
             model_name = model_info["model_name"]
-            base_url = model_api_keys[sdk_name]["base_url"]
-            api_keys = model_api_keys[sdk_name]["api_keys"]
+            base_url = model_keys[sdk_name]["base_url"]
+            api_keys = model_keys[sdk_name]["api_keys"]
 
             # 使用模型名称作为唯一标识符
             model_key = f"{sdk_name}:{model_name}"
@@ -62,4 +58,4 @@ def load_models(models_config, model_keys):
 
         models[model_group] = batch_models
 
-    return models, model_api_keys
+    return models, model_keys
