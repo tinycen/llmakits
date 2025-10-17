@@ -232,8 +232,9 @@ def load_models(models_config, model_keys, global_config=None):
                         model_params = parse_model_config(config_dict)
 
                 # 创建新的模型实例，传入配置参数
+                # 注意：api_keys需要创建副本，避免多个模型共享同一个列表对象
                 mini_model = BaseOpenai(
-                    platform=sdk_name, base_url=base_url, api_keys=api_keys, model_name=model_name, **model_params
+                    platform=sdk_name, base_url=base_url, api_keys=api_keys.copy(), model_name=model_name, **model_params
                 )
 
                 # 将新创建的模型实例添加到全局缓存
