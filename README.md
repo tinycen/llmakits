@@ -97,6 +97,43 @@ zhipu:
 3. **适当设置重试**: 根据业务需求配置模型数量和密钥数量
 4. **监控切换次数**: 通过 `model_switch_count` 监控模型切换频率
 
+#### 全局模型配置
+
+支持通过CSV文件配置模型的高级参数，实现更精细的模型控制：
+
+**全局配置文件格式** (`config/global_model_config.csv`):
+
+| 参数名 | 说明 | 适用 platform/sdk |
+| --- | --- | --- |
+| `platform` | 平台名称 | - |
+| `model_name` | 模型名称 | - |
+| `stream` | 是否启用流式输出 | - |
+| `stream_real` | 是否启用真实流式输出 | - |
+| `response_format` | 响应格式 (`json` 或 `text`) | `zhipu` |
+| `thinking` | 思考模式配置 | `zhipu` |
+| `extra_enable_thinking` | 启用思考功能（会嵌套在extra_body中） | `modelscope`,`dashscope_openai` |
+| `reasoning_effort` | 推理努力程度 | `gemini` |
+
+**通配符匹配支持**:
+- `platform` - `model_name` 格式
+- 精确匹配: `dashscope,qwen3-max-preview`
+- 通配符匹配 (`*` 包裹模型名称):
+  - 示例：`openai,*gpt*` (匹配所有包含 gpt 的模型)
+- 通用匹配 (`*` 替代模型名称):
+  - 示例：`zhipu,*` (匹配智谱平台所有模型)
+
+**使用示例**:
+```python
+from llmakits import load_models
+
+# 加载带全局配置的模型
+models, keys = load_models(
+    'config/models_config.yaml',
+    'config/keys_config.yaml',
+    global_config='config/global_model_config.csv'
+)
+```
+
 ### 2. 加载模型
 
 ```python
@@ -118,6 +155,13 @@ model_keys = {
     }
 }
 models = load_models(models_config, model_keys)
+
+# 方式3：使用全局配置（支持高级参数配置）
+models = load_models(
+    'config/models_config.yaml',
+    'config/keys_config.yaml',
+    global_config='config/global_model_config.csv'  # 可选：全局模型配置
+)
 
 # 获取模型组
 my_models = models['my_models']
@@ -226,6 +270,36 @@ print(f"验证通过的结果: {result}")
 print(f"使用token数: {tokens}")
 ```
 
+#### 高级用法：获取详细执行结果
+
+```python
+from llmakits import ModelDispatcher
+from llmakits.dispatcher import ExecutionResult
+
+# 创建调度器
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 准备消息
+message_info = {
+    "system_prompt": "你是一个编程专家",
+    "user_text": "请介绍Python语言的特点"
+}
+
+# 获取详细执行结果
+result: ExecutionResult = dispatcher.execute_with_group(
+    message_info,
+    group_name="generate_title",
+    return_detailed=True  # 返回详细结果
+)
+
+print(f"返回消息: {result.return_message}")
+print(f"使用token数: {result.total_tokens}")
+print(f"最后尝试的模型索引: {result.last_tried_index}")
+print(f"是否成功: {result.success}")
+if result.error:
+    print(f"错误信息: {result.error}")
+```
+
 #### 高级用法：耗时警告监控
 
 ```python
@@ -248,6 +322,30 @@ print(f"使用token数: {tokens}")
 
 # 查看模型切换次数
 print(f"模型切换次数: {dispatcher.model_switch_count}")
+```
+
+#### 高级用法：指定起始模型索引
+
+```python
+from llmakits import ModelDispatcher
+
+# 创建调度器
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 准备消息
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言"
+}
+
+# 从第2个模型开始执行（索引从0开始）
+result, tokens = dispatcher.execute_with_group(
+    message_info,
+    group_name="generate_title",
+    start_index=1  # 从第2个模型开始
+)
+print(f"结果: {result}")
+print(f"使用token数: {tokens}")
 ```
 
 **耗时警告功能特点：**
@@ -336,6 +434,74 @@ message_info = {
 }
 result, tokens = model.send_message([], message_info)
 print(f"回复: {result}")
+```
+
+#### 高级配置选项
+
+```python
+from llmakits import BaseOpenai
+
+# 创建带高级配置的客户端
+client = BaseOpenai(
+    platform="openai",
+    base_url="https://api.openai.com/v1",
+    api_keys=["your-api-key"],
+    model_name="gpt-4o",
+    stream=True,              # 启用流式输出
+    stream_real=False,        # 真实流式输出
+    request_timeout=60,       # 请求超时时间（秒）
+    max_retries=3            # 最大重试次数
+)
+
+# 获取可用模型列表（DataFrame格式）
+models_df = client.models_df()
+print(f"可用模型: {models_df}")
+```
+
+#### 获取模型信息
+
+```python
+from llmakits import BaseOpenai
+
+# 创建客户端
+client = BaseOpenai(
+    platform="openai",
+    base_url="https://api.openai.com/v1",
+    api_keys=["your-api-key"],
+    model_name="gpt-4o"
+)
+
+# 获取模型列表（DataFrame格式，包含创建时间等信息）
+models_df = client.models_df()
+print(f"模型列表:")
+print(models_df)
+
+# 获取特定模型的创建时间
+if 'created' in models_df.columns:
+    gpt4o_created = models_df[models_df['id'] == 'gpt-4o']['created'].iloc[0]
+    print(f"GPT-4o 创建时间: {gpt4o_created}")
+```
+
+#### 错误处理和API密钥耗尽
+
+```python
+from llmakits import BaseOpenai
+
+client = BaseOpenai(
+    platform="openai",
+    base_url="https://api.openai.com/v1",
+    api_keys=["your-api-key"],
+    model_name="gpt-4o"
+)
+
+try:
+    response, tokens = client.send_message([], message_info)
+    print(f"模型响应: {response}")
+except Exception as e:
+    if "API key exhausted" in str(e):
+        print("API密钥已耗尽，请更换密钥")
+    else:
+        print(f"发生错误: {e}")
 ```
 
 ## 高级功能
