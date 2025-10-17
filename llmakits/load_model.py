@@ -1,6 +1,6 @@
 from filekits.base_io import load_yaml
 import pandas as pd
-import fnmatch
+from fnmatch import fnmatch
 from typing import Dict, Any, Optional
 from .llm_client import BaseOpenai
 
@@ -73,7 +73,7 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
             continue
 
         # 检查模型名称是否匹配（支持通配符）
-        if fnmatch.fnmatch(model_name, config_model):
+        if fnmatch(model_name, config_model):
             # 计算特异性：通配符越少，特异性越高
             specificity = len(config_model) - config_model.count('*')
             if specificity > best_specificity:

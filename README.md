@@ -103,6 +103,8 @@ zhipu:
 
 **全局配置文件格式** (`config/global_model_config.csv`):
 
+文件格式：仅支持 .csv 和 .xlsx 格式。
+
 | 参数名 | 说明 | 适用 platform/sdk |
 | --- | --- | --- |
 | `platform` | 平台名称 | - |
