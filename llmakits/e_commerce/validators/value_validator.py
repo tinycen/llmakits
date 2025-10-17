@@ -54,6 +54,8 @@ def validate_string(choices: List[str], search_value: str):
 
     # 未找到匹配项
     print(f"未找到匹配项: {search_value}")
+    if len(choices) < 30:
+        print(f"choices: {choices}")
     return None
 
 
