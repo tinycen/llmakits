@@ -17,3 +17,11 @@ modelscope:
 zhipu:
   base_url: ""
   api_keys: ["", ""]
+
+dashscope_openai:
+  base_url: ""
+  api_keys: ["", ""]
+
+gemini:
+  base_url: ""
+  api_keys: ["", ""]

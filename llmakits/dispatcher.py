@@ -4,6 +4,7 @@
 
 from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
 from funcguard import print_line, print_block, time_monitor
+from filekits.base_io import save_json
 from .message import convert_to_json
 from .load_model import load_models
 
@@ -27,13 +28,14 @@ class ModelDispatcher:
         self,
         models_config: Optional[Union[str, Dict[str, Any]]] = None,
         model_keys: Optional[Union[str, Dict[str, Any]]] = None,
+        global_config: Optional[Union[str, Dict[str, Any]]] = None,
     ):
         self.model_switch_count = 0
         self.exhausted_models = []
         self.warning_time = None  # 用于 显示超时警告的阈值，单位秒
 
         if models_config and model_keys:
-            self.model_groups, self.model_keys = load_models(models_config, model_keys)
+            self.model_groups, self.model_keys = load_models(models_config, model_keys, global_config)
         else:
             self.model_groups = {}
             self.model_keys = {}
@@ -261,3 +263,56 @@ class ModelDispatcher:
             start_index=start_index,
             return_detailed=return_detailed,
         )
+
+    def export_config(self, file_path: str = "dispatcher_config.json") -> None:
+        """
+        导出模型配置信息为JSON格式
+
+        Args:
+            file_path: 导出的JSON文件路径，默认"dispatcher_config.json"
+
+        导出内容包括：
+        - model_groups: 模型组配置（包含模型client的参数）
+        - 统计信息：模型组数量、总模型数量等
+
+        Returns:
+            None: 无返回值，直接将配置写入文件
+        """
+        export_data = {
+            "model_groups": {},
+            "statistics": {
+                "total_groups": len(self.model_groups),
+                "total_models": 0,
+                "exhausted_models": len(self.exhausted_models),
+                "model_switch_count": self.model_switch_count,
+            },
+        }
+
+        # 导出模型组配置
+        for group_name, group_models in self.model_groups.items():
+            export_data["model_groups"][group_name] = []
+            export_data["statistics"]["total_models"] += len(group_models)
+
+            for model_info in group_models:
+                # 获取模型client实例
+                model_client = model_info.get("model", None)
+
+                # 构建模型配置信息
+                model_config = {
+                    "sdk_name/platform": model_info.get("sdk_name", "unknown"),
+                    "model_name": model_info.get("model_name", "unknown"),
+                    "base_url": getattr(model_client, 'base_url', 'unknown') if model_client else 'unknown',
+                    # 导出模型client的关键参数
+                    "client_config": {
+                        "stream": getattr(model_client, 'stream', False) if model_client else False,
+                        "stream_real": getattr(model_client, 'stream_real', False) if model_client else False,
+                        "extra_body": getattr(model_client, 'extra_body', {}) if model_client else {},
+                    },
+                }
+
+                export_data["model_groups"][group_name].append(model_config)
+
+        # 保存到JSON文件
+        save_json(export_data, file_path)
+
+        return

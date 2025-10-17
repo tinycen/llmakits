@@ -1,0 +1,120 @@
+{
+    "model_groups": {
+        "generate_title": [
+            {
+                "sdk_name/platform": "dashscope",
+                "model_name": "qwen3-max-preview",
+                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {}
+                }
+            },
+            {
+                "sdk_name/platform": "zhipu",
+                "model_name": "glm-4-plus",
+                "base_url": "",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {
+                        "response_format": {
+                            "type": "json_object"
+                        }
+                    }
+                }
+            }
+        ],
+        "option_name": [
+            {
+                "sdk_name/platform": "gemini",
+                "model_name": "models/learnlm-2.0-flash-experimental",
+                "base_url": "",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {
+                        "reasoning_effort": "none"
+                    }
+                }
+            },
+            {
+                "sdk_name/platform": "zhipu",
+                "model_name": "glm-4.5",
+                "base_url": "",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {
+                        "thinking": {
+                            "type": "disabled"
+                        }
+                    }
+                }
+            }
+        ],
+        "key_word": [
+            {
+                "sdk_name/platform": "dashscope_openai",
+                "model_name": "qwen3-235b-a22b",
+                "base_url": "",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {
+                        "extra_body": {
+                            "enable_thinking": false
+                        }
+                    }
+                }
+            },
+            {
+                "sdk_name/platform": "zhipu",
+                "model_name": "glm-4-plus",
+                "base_url": "",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {
+                        "response_format": {
+                            "type": "json_object"
+                        }
+                    }
+                }
+            }
+        ],
+        "translate_box": [
+            {
+                "sdk_name/platform": "modelscope",
+                "model_name": "Qwen/Qwen3-32B",
+                "base_url": "https://api-inference.modelscope.cn/v1/",
+                "client_config": {
+                    "stream": true,
+                    "stream_real": false,
+                    "extra_body": {
+                        "extra_body": {
+                            "enable_thinking": false
+                        }
+                    }
+                }
+            },
+            {
+                "sdk_name/platform": "modelscope",
+                "model_name": "deepseek-ai/DeepSeek-V3",
+                "base_url": "https://api-inference.modelscope.cn/v1/",
+                "client_config": {
+                    "stream": false,
+                    "stream_real": false,
+                    "extra_body": {}
+                }
+            }
+        ]
+    },
+    "statistics": {
+        "total_groups": 4,
+        "total_models": 8,
+        "exhausted_models": 0,
+        "model_switch_count": 0
+    }
+}

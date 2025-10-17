@@ -94,51 +94,21 @@ class BaseClient:
 
 # 定义 BaseOpenai 类
 class BaseOpenai(BaseClient):
-    def __init__(self, platform, base_url, api_keys, model_name, response_format="json"):
+
+    def __init__(self, platform, base_url, api_keys, model_name, stream=False, stream_real=False, extra_body=None):
         super().__init__(platform, model_name)
         self.base_url = base_url
         self.api_keys = api_keys
         self.request_timeout = 150  # 新增：API 请求超时时间
         self.max_retries = 3  # 新增：API 请求超时时间
 
-        # 处理流式输出
-        if platform == "modelscope":
-            if model_name in ["Qwen/QwQ-32B", "Qwen/QVQ-72B-Preview", "Qwen/Qwen3-235B-A22B", "Qwen/Qwen3-32B"]:
-                self.stream = True
-                self.stream_real = False
-
-            if model_name in ["Qwen/Qwen3-235B-A22B", "Qwen/Qwen3-32B"]:
-                extra_body = {"enable_thinking": False}
-                self.extra_body = {"extra_body": extra_body}  # extra_body 才是 client.chat.completions.create 的参数
-
-        if platform == "dashscope":
-            if model_name in ["qwen3-235b-a22b", "qwen3-32b"] or "qwen-plus" in model_name:
-                extra_body = {"enable_thinking": False}
-                self.extra_body = {"extra_body": extra_body}
-
-        if platform == "gemini":
-            if "flash" in model_name:
-                extra_body = {"reasoning_effort": "none"}
-
-            elif "pro" in model_name:
-                extra_body = {"reasoning_effort": "low"}
-
-            # reasoning_effort 属于 client.chat.completions.create 的参数
-            self.extra_body = extra_body
-
-        # 处理 response_format
-        if platform == "zhipu":
-            if response_format == "json":
-                self.response_format = {"type": "json_object"}
-            else:
-                self.response_format = {"type": "text"}
-            extra_body = {"response_format": self.response_format}
-
-            if "glm-4.5" in model_name or "glm-4.6" in model_name:
-                extra_body["thinking"] = {"type": "disabled"}
-
-            self.extra_body = extra_body
         self.platform = platform
+        self.stream = stream
+        self.stream_real = stream_real
+
+        # 配置 extra_body 参数
+        if extra_body is not None:
+            self.extra_body = extra_body
 
         # 初始化客户端
         self._init_client()

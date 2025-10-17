@@ -6,15 +6,15 @@ generate_title:
     model_name: "glm-4-plus"
 
 option_name:
-  - sdk_name: "dashscope"
-    model_name: "qwen3-max-preview"
+  - sdk_name: "gemini"
+    model_name: "models/learnlm-2.0-flash-experimental"
 
   - sdk_name: "zhipu"
-    model_name: "glm-4-plus"
+    model_name: "glm-4.5"
 
 key_word:
-  - sdk_name: "dashscope"
-    model_name: "qwen3-max-preview"
+  - sdk_name: "dashscope_openai"
+    model_name: "qwen3-235b-a22b"
 
   - sdk_name: "zhipu"
     model_name: "glm-4-plus"

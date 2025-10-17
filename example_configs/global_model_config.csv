@@ -1,0 +1,17 @@
+﻿platform,model_name,stream,stream_real,extra_enable_thinking,reasoning_effort,response_format,thinking
+modelscope,Qwen/QwQ-32B,TRUE,FALSE,,,,
+modelscope,Qwen/QVQ-72B-Preview,TRUE,FALSE,,,,
+modelscope,Qwen/Qwen3-235B-A22B,TRUE,FALSE,FALSE,,,
+modelscope,Qwen/Qwen3-32B,TRUE,FALSE,FALSE,,,
+dashscope_openai,qwen3-235b-a22b,,,FALSE,,,
+dashscope_openai,qwen3-32b,,,FALSE,,,
+dashscope_openai,*qwen-plus*,,,FALSE,,,
+gemini,*flash*,,,,none,,
+gemini,*pro*,,,,low,,
+zhipu,*,,,,,json,
+zhipu,*glm-4.5*,,,,,,disabled
+zhipu,*glm-4.6*,,,,,,disabled
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
