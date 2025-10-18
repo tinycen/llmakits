@@ -110,7 +110,7 @@ def _build_content_by_provider(
             print(f"Ollama图片批量转换base64失败: {e}")
             raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
-    # 兼容通用的 "openai", "zhipu", "modelscope" 格式
+    # 兼容通用的 "openai", "modelscope", "openrouter" 格式 , 不支持 zhipu ( 可切换为 zhipu_openai 进行兼容 )
     else:
         if provider_name in ["openrouter", "gemini", "vercel", "github"]:
             # openrouter 需要base64格式的图片
@@ -135,7 +135,9 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
         img_list: 图片URL列表
 
     Returns:
-        转换后的图片URL列表（base64格式的保留，非图片格式的保持原样）
+        转换后的图片URL列表（仅保留转换成功的base64格式）
+        注意：转换后的图片列表，不支持 sdk/platform/provider = zhipu ,
+            如需使用，请使用名称 zhipu_openai 兼容 openai的格式
     """
     if not img_list:
         raise ValueError("图片 img_list 不能为空!")
@@ -158,7 +160,7 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
         if img_url.startswith('data:image/') and ';base64,' in img_url:
             # 已经是base64格式，直接添加到结果列表
             processed_img_list.append(img_url)
-            print(f"图片已经是base64格式，无需转换: {img_url}...")
+            # print(f"图片已经是base64格式，无需转换: {img_url}...")
             continue
 
         # 检查是否为有效的图片URL
