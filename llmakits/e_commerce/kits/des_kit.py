@@ -1,7 +1,6 @@
-from funcguard import print_block
 from llmakits.dispatcher import ModelDispatcher
 from ..validators.html_validator import validate_html_fix
-from ..validators.string_validator import contains_chinese
+from ..validators.string_validator import contains_chinese, remove_chinese
 from ...message import extract_field
 
 
@@ -31,9 +30,15 @@ def generate_html(
     def validate_func(return_message: str):
         html_string = extract_field(return_message, "html")
         if not allow_chinese:
-            if contains_chinese(html_string):
-                print_block("html_string contains chinese", html_string)
-                return False, None
+            # 检查中文字符的数量
+            chinese_count = contains_chinese(html_string, simple_check=False)
+            if chinese_count > 0:
+                print(f"html 发现中文字符 数量: {chinese_count}")
+                if chinese_count > 5:
+                    return False, None
+                else:
+                    print(f"移除中文字符……")
+                    html_string = remove_chinese(html_string)
         return True, html_string
 
     message_info = {"system_prompt": generate_prompt, "user_text": product_info}
