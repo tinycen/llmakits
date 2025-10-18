@@ -35,7 +35,7 @@ def generate_html(
         return True, html_string
 
     message_info = {"system_prompt": generate_prompt, "user_text": product_info}
-    html_string, _ = dispatcher.execute_with_group(
+    html_string, _ = dispatcher.execute_with_group(  # pyright: ignore[reportAssignmentType]
         message_info, generate_group, format_json=True, validate_func=validate_func
     )
 
