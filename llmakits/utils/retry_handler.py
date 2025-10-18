@@ -125,6 +125,8 @@ class RetryHandler:
             if api_retry_count == 1 and img_list:
                 print(f"尝试将图片转换为base64格式...")
                 img_list = convert_images_to_base64(img_list)
+                # 更新message_config，确保转换后的base64图片在后续重试中继续使用
+                # message_config["img_list"] = img_list
 
             messages = rebuild_messages_single_image(
                 self.platform,
@@ -150,6 +152,10 @@ class RetryHandler:
         """
 
         print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
+
+        # 只使用第一张图片，并更新message_config
+        # if message_config["img_list"]:
+        #     message_config["img_list"] = [message_config["img_list"][0]]
 
         messages = rebuild_messages_single_image(
             self.platform,

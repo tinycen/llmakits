@@ -143,7 +143,7 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
         if img_url.startswith('data:image/') and ';base64,' in img_url:
             # 已经是base64格式，直接添加到结果列表
             processed_img_list.append(img_url)
-            print(f"图片已经是base64格式，无需转换: {img_url[:50]}...")
+            print(f"图片已经是base64格式，无需转换: {img_url}...")
             continue
 
         # 检查是否为有效的图片URL
