@@ -35,7 +35,7 @@ def remove_chinese(text):
 
 
 # 判断字符串中是否包含特殊符号
-def contains_special_symbols(text, simple_check=True):
+def contains_special_symbols(text, simple_check=True, support_multilingual=True):
     """
     判断字符串text中是否包含特殊符号（注意：此方法不能用于判断HTML中的特殊符号）。
 
@@ -44,16 +44,23 @@ def contains_special_symbols(text, simple_check=True):
         simple_check: 是否进行简要判断，默认为True。
                     - True时返回布尔值，表示是否包含特殊符号
                     - False时返回特殊符号的数量
+        support_multilingual: 是否支持多语言字符，默认为True。
+                           - True时保留所有语言的字母字符（默认，支持多语言，如法语等）
+                           - False时仅保留英文字母、数字和下划线
 
     返回:
         简要模式(True): 布尔值，表示是否包含特殊符号
         详细模式(False): 整数，表示特殊符号的数量
     """
-    # 定义特殊符号的正则表达式模式，包括你提到的符号
-    # \u02da 是环状音符字符，其他是中文字符
-    # 这里我们排除常见的标点符号，只匹配真正的特殊符号
-    # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
-    pattern = r'[^\w\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
+    # 定义特殊符号的正则表达式模式
+    if support_multilingual:
+        # 支持多语言（默认）：使用Unicode属性匹配所有字母字符
+        # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
+        pattern = r'[^\p{L}\p{N}\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
+    else:
+        # 仅支持英语：\w只匹配英文字母、数字和下划线
+        # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
+        pattern = r'[^\w\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
 
     if simple_check:
         return bool(regex.search(pattern, text))
@@ -65,12 +72,23 @@ def contains_special_symbols(text, simple_check=True):
 
 
 # 移除字符串中的所有特殊符号
-def remove_special_symbols(text):
+def remove_special_symbols(text, support_multilingual=True):
     """
     移除字符串text中的所有特殊符号（注意：此方法不能用于移除HTML中的特殊符号）。
+
+    参数:
+        text: 要处理的字符串
+        support_multilingual: 是否支持多语言字符，默认为True。
+                           - True时保留所有语言的字母字符（默认，支持多语言，如法语等）
+                           - False时仅保留英文字母、数字和下划线
     """
     # 定义特殊符号的正则表达式模式
-    # 排除常见的标点符号，只匹配真正的特殊符号
-    # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
-    pattern = r'[^\w\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
+    if support_multilingual:
+        # 支持多语言（默认）：使用Unicode属性匹配所有字母字符
+        # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
+        pattern = r'[^\p{L}\p{N}\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
+    else:
+        # 仅支持英语：\w只匹配英文字母、数字和下划线
+        # 排除：.,!?;:'"()[]{}<>-_=+*/\|@#$%^&`~
+        pattern = r'[^\w\s.,!?;:\'"()\[\]{}<>\-_=+*/\\|@#$%^&`~]'
     return regex.sub(pattern, '', text)
