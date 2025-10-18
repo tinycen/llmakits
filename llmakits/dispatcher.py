@@ -67,6 +67,9 @@ class ModelDispatcher:
         print(f"Model switch count: {self.model_switch_count}")
         if self.exhausted_models:
             print(f"Exhausted models: {self.exhausted_models}")
+        # 新增：输出缓存统计
+        cache_stats = self.get_cache_stats()
+        print(f"Image cache: {cache_stats['cache_size']}/{cache_stats['max_size']}")
         return
 
     # 移除Token已用尽的模型
@@ -307,6 +310,7 @@ class ModelDispatcher:
                 "total_models": 0,
                 "exhausted_models": len(self.exhausted_models),
                 "model_switch_count": self.model_switch_count,
+                "image_cache": self.get_cache_stats(),  # 新增：缓存统计
             },
         }
 
