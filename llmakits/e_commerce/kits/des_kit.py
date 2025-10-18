@@ -1,3 +1,4 @@
+from funcguard import print_block
 from llmakits.dispatcher import ModelDispatcher
 from ..validators.html_validator import validate_html_fix
 from ..validators.string_validator import contains_chinese
@@ -31,6 +32,7 @@ def generate_html(
         html_string = extract_field(return_message, "html")
         if not allow_chinese:
             if contains_chinese(html_string):
+                print_block("html_string contains chinese", html_string)
                 return False, None
         return True, html_string
 
