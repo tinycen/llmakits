@@ -22,7 +22,8 @@ def contains_chinese(text, simple_check=True):
     else:
         # 查找所有汉字并返回数量
         matches = regex.findall(r'\p{IsHan}', text)
-        print(f"发现中文字符: {''.join(matches)}")
+        print(f"发现中文字符: {repr(''.join(matches))} (数量: {len(matches)})")
+        print(f"字符详情: {[(i, repr(char), ord(char)) for i, char in enumerate(matches)]}")
         return len(matches)
 
 

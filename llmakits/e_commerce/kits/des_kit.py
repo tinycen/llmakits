@@ -33,7 +33,6 @@ def generate_html(
             # 检查中文字符的数量
             chinese_count = contains_chinese(html_string, simple_check=False)
             if chinese_count > 0:
-                print(f"html 发现中文字符 数量: {chinese_count}")
                 if chinese_count > 5:
                     return False, None
                 else:
