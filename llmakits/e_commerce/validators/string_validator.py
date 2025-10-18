@@ -22,9 +22,11 @@ def contains_chinese(text, simple_check=True):
     else:
         # 查找所有汉字并返回数量
         matches = regex.findall(r'\p{IsHan}', text)
-        print(f"发现中文字符: {repr(''.join(matches))} (数量: {len(matches)})")
-        print(f"字符详情: {[(i, repr(char), ord(char)) for i, char in enumerate(matches)]}")
-        return len(matches)
+        chinese_count = len(matches)
+        if chinese_count > 0:
+            print(f"发现中文字符: {repr(''.join(matches))} (数量: {chinese_count})")
+            # print(f"字符详情: {[(i, repr(char), ord(char)) for i, char in enumerate(matches)]}")
+        return chinese_count
 
 
 # 移除字符串中的所有汉字（含扩展区）
