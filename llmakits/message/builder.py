@@ -5,7 +5,6 @@
 
 from typing import List, Optional, Dict, Any
 from filekits.base_io import download_encode_base64, batch_download_encode_base64
-from ..dispatcher import ModelDispatcher
 
 
 def prepare_messages(
@@ -145,6 +144,10 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
     # 如果没有传入缓存对象，尝试从dispatcher获取全局缓存
     if image_cache is None:
         try:
+            # 注意：必须在这里导入，避免循环引用
+            # dispatcher.py 导入 message.convert_to_json，而 message.builder 又导入 dispatcher.ModelDispatcher
+            # 如果在模块级别导入会造成循环引用错误
+            from ..dispatcher import ModelDispatcher
             image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             # 如果无法导入，不使用缓存

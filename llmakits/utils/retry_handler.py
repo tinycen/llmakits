@@ -8,7 +8,6 @@ from funcguard.printer import print_line
 from funcguard.core import timeout_handler
 from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
-from ..dispatcher import ModelDispatcher
 
 # 图片下载相关的错误关键词列表
 IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
@@ -38,6 +37,10 @@ class RetryHandler:
         # 获取全局图片缓存
         self.image_cache = None
         try:
+            # 注意：必须在这里导入，避免循环引用
+            # dispatcher.py 导入 message.convert_to_json，而 utils.retry_handler 又导入 dispatcher.ModelDispatcher
+            # 如果在模块级别导入会造成循环引用错误
+            from ..dispatcher import ModelDispatcher
             self.image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             pass
