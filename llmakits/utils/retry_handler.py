@@ -8,7 +8,7 @@ from funcguard.printer import print_line
 from funcguard.core import timeout_handler
 from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
-
+from ..dispatcher import ModelDispatcher
 
 # 图片下载相关的错误关键词列表
 IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
@@ -35,6 +35,12 @@ class RetryHandler:
     def __init__(self, platform: str):
         self.platform = platform
         self.retry_keywords = DEFAULT_RETRY_KEYWORDS
+        # 获取全局图片缓存
+        self.image_cache = None
+        try:
+            self.image_cache = ModelDispatcher.get_image_cache()
+        except ImportError:
+            pass
 
     def prepare_request_data(self, messages: Any, message_info: Optional[Dict]) -> Tuple[Any, Dict]:
         """准备请求数据"""
@@ -124,7 +130,7 @@ class RetryHandler:
             # 第3次尝试时，检测图片格式并进行base64转换
             if api_retry_count == 1 and img_list:
                 print(f"尝试将图片转换为base64格式...")
-                img_list = convert_images_to_base64(img_list)
+                img_list = convert_images_to_base64(img_list, self.image_cache)
                 # 更新message_config，确保转换后的base64图片在后续重试中继续使用
                 # message_config["img_list"] = img_list
 

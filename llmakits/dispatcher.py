@@ -7,6 +7,7 @@ from funcguard import print_line, print_block, time_monitor
 from filekits.base_io import save_json
 from .message import convert_to_json
 from .load_model import load_models
+from .utils.image_cache import ImageBase64Cache
 
 
 class ExecutionResult(NamedTuple):
@@ -24,6 +25,9 @@ class ModelDispatcher:
     模型调度器类，负责管理模型切换次数和执行任务
     """
 
+    # 类级别的全局缓存，所有实例共享
+    _global_image_cache = ImageBase64Cache(max_size=10)
+
     def __init__(
         self,
         models_config: Optional[Union[str, Dict[str, Any]]] = None,
@@ -39,6 +43,24 @@ class ModelDispatcher:
         else:
             self.model_groups = {}
             self.model_keys = {}
+
+    @classmethod
+    def get_image_cache(cls) -> ImageBase64Cache:
+        """获取全局图片缓存实例"""
+        return cls._global_image_cache
+
+    @classmethod
+    def clear_image_cache(cls) -> None:
+        """清空全局图片缓存"""
+        cls._global_image_cache.clear()
+
+    @classmethod
+    def get_cache_stats(cls) -> Dict[str, Any]:
+        """获取缓存统计信息"""
+        return {
+            "cache_size": cls._global_image_cache.size(),
+            "max_size": cls._global_image_cache.max_size,
+        }
 
     # 输出报告
     def report(self):

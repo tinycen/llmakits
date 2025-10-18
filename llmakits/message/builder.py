@@ -5,6 +5,7 @@
 
 from typing import List, Optional, Dict, Any
 from filekits.base_io import download_encode_base64, batch_download_encode_base64
+from ..dispatcher import ModelDispatcher
 
 
 def prepare_messages(
@@ -120,7 +121,7 @@ def _build_content_by_provider(
     return system_content, user_content
 
 
-def convert_images_to_base64(img_list: List[str]) -> List[str]:
+def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]:
     """
     将图片URL列表转换为base64格式
 
@@ -132,6 +133,14 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
     """
     if not img_list:
         raise ValueError("图片 img_list 不能为空!")
+
+    # 如果没有传入缓存对象，尝试从dispatcher获取全局缓存
+    if image_cache is None:
+        try:
+            image_cache = ModelDispatcher.get_image_cache()
+        except ImportError:
+            # 如果无法导入，不使用缓存
+            image_cache = None
 
     processed_img_list = []
     valid_extensions = ('.jpg', '.jpeg', '.png')
@@ -150,6 +159,20 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
         img_lower = img_url.lower()
         if img_lower.endswith(valid_extensions):
             total_valid_images += 1
+
+            # 尝试从缓存中获取
+            cached_base64 = None
+            if image_cache is not None:
+                cached_base64 = image_cache.get(img_url)
+                if cached_base64:
+                    print(f"已从缓存中获取图片base64: {img_url}")
+                    # 构建完整的base64 URL
+                    mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
+                    base64_url = f"data:{mime_type};base64,{cached_base64}"
+                    processed_img_list.append(base64_url)
+                    successful_conversions += 1
+                    continue
+
             try:
                 # 下载并转换为base64
                 base64_str = download_encode_base64(img_url)
@@ -161,11 +184,12 @@ def convert_images_to_base64(img_list: List[str]) -> List[str]:
                     successful_conversions += 1
                     print(f"已将图片转换为base64格式: {img_url}")
                 else:
-                    print(f"图片 {img_url} 转换为base64失败，保持原始URL")
-                    processed_img_list.append(img_url)
+                    print(f"转换后,base64_str无效，已跳过：{img_url} ")
+                    continue
+
             except Exception as e:
-                print(f"转换图片为base64失败 {img_url}: {e}")
-                processed_img_list.append(img_url)
+                print(f"图片转base64失败: {img_url}\n{e}")
+                continue
         else:
             processed_img_list.append(img_url)
 
