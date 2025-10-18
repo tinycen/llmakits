@@ -83,7 +83,12 @@ def rebuild_messages_single_image(
 
 
 def _build_content_by_provider(
-    provider_name: str, system_prompt: str, user_text: str, include_img: bool, img_list: List[str]
+    provider_name: str,
+    system_prompt: str,
+    user_text: str,
+    include_img: bool,
+    img_list: List[str],
+    image_cache=None,  # 图片缓存参数
 ) -> tuple:
     """根据提供商构建内容格式"""
 
@@ -99,6 +104,7 @@ def _build_content_by_provider(
         system_content = system_prompt
         user_content = user_text
         try:
+            # todu 这里后续需要修改
             img_list = batch_download_encode_base64(img_list)
         except Exception as e:
             print(f"Ollama图片批量转换base64失败: {e}")
@@ -109,10 +115,10 @@ def _build_content_by_provider(
         if provider_name in ["openrouter", "gemini", "vercel", "github"]:
             # openrouter 需要base64格式的图片
             try:
-                img_list = convert_images_to_base64(img_list)
+                img_list = convert_images_to_base64(img_list, image_cache)  # 传递缓存
             except Exception as e:
-                print(f"OpenRouter图片转换base64失败: {e}")
-                raise Exception(f"图片下载或转换base64失败，url：{img_list}")
+                print(f"图片列表转base64失败: {e}")
+                raise Exception(f"图片列表转base64失败，img_list：{img_list}")
 
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
         user_content.append({"type": "text", "text": user_text})
@@ -177,6 +183,10 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
                 # 下载并转换为base64
                 base64_str = download_encode_base64(img_url)
                 if base64_str:
+                    # 存入缓存
+                    if image_cache is not None:
+                        image_cache.put(img_url, base64_str)
+                        # print(f"已将图片base64存入缓存: {img_url}")
                     # 构建base64格式的图片URL
                     mime_type = 'image/jpeg' if img_lower.endswith(('.jpg', '.jpeg')) else 'image/png'
                     base64_url = f"data:{mime_type};base64,{base64_str}"

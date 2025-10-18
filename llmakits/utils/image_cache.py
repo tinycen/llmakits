@@ -16,7 +16,7 @@ class ImageBase64Cache:
     def __init__(self, max_size: int = 10):
         """
         初始化缓存
-        
+
         Args:
             max_size: 最大缓存数量，默认10张图片
         """
@@ -26,16 +26,16 @@ class ImageBase64Cache:
     def get(self, url: str) -> Optional[str]:
         """
         从缓存中获取base64字符串
-        
+
         Args:
             url: 图片URL
-            
+
         Returns:
             base64字符串，如果不存在则返回None
         """
         if url not in self.cache:
             return None
-        
+
         # 移动到末尾（标记为最近使用）
         self.cache.move_to_end(url)
         return self.cache[url]
@@ -43,7 +43,7 @@ class ImageBase64Cache:
     def put(self, url: str, base64_str: str) -> None:
         """
         将图片base64存入缓存
-        
+
         Args:
             url: 图片URL
             base64_str: base64编码字符串
