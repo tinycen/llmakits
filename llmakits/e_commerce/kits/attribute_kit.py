@@ -64,5 +64,5 @@ def fill_attr(dispatcher: ModelDispatcher, message_info: dict, group: str, choic
         执行结果
     """
     validate_func = _create_validate_func(choices)
-    result, _ = dispatcher.execute_with_group(message_info, group, format_json=True, validate_func=validate_func)
+    result, _ = dispatcher.execute_with_group(message_info, group, format_json=True, validate_func=validate_func)  # type: ignore
     return result
