@@ -27,6 +27,14 @@ DEFAULT_RETRY_KEYWORDS = [
 
 DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
 
+DEFAULT_RETRY_API_KEYWORDS = [
+    "Request limit exceeded",  # modelscope
+    "The free tier of the model has been exhausted",  # dashscope
+    "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
+    "You exceeded your current quota",  # gemini
+    "You have exceeded your monthly included credits",  # huggingface
+]
+
 
 class RetryHandler:
     """处理API请求重试逻辑的组件"""
@@ -93,6 +101,10 @@ class RetryHandler:
                 # hasattr 检查 response 是否有 json 方法
                 elif hasattr(response, 'json'):
                     res = response.json()
+                    # 判断 res 是否是列表
+                    if isinstance(res, list):
+                        res = res[0]
+
                     error = res.get("error", res.get("errors", {}))
                     error_message = error.get("message", str(e))
 
@@ -212,12 +224,8 @@ class RetryHandler:
             should_retry, updated_messages = self.handle_image_error(messages, message_config)
             return should_retry, updated_messages, False
 
-        elif "Request limit exceeded" in error_message:  # 适用于 modelscope
-            print("模型每日请求超过限制")
-            return True, messages, True  # 需要重试且需要切换API密钥
-
-        elif "The free tier of the model has been exhausted" in error_message:  # 适用于 dashscope
-            print("免费额度已用完")
+        elif any(keyword in error_message for keyword in DEFAULT_RETRY_API_KEYWORDS):
+            print("模型每日请求超过限制 或 免费额度已用完")
             return True, messages, True  # 需要重试且需要切换API密钥
 
         else:
