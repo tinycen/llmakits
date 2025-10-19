@@ -8,32 +8,7 @@ from funcguard.printer import print_line
 from funcguard.core import timeout_handler
 from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
-
-# 图片下载相关的错误关键词列表
-IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
-    "Download the media resource timed out",
-    "Failed to download multimodal content",
-    "Download multimodal file timed out",
-]
-
-# 默认的重试关键词列表
-DEFAULT_RETRY_KEYWORDS = [
-    "Too many requests",
-    "Allocated quota exceeded, please increase your quota limit",
-    "Max retries exceeded with url",
-    "Requests rate limit exceeded, please try again later",
-    "Free credits temporarily have rate limits",  # vercel
-]
-
-DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
-
-DEFAULT_RETRY_API_KEYWORDS = [
-    "Request limit exceeded",  # modelscope
-    "The free tier of the model has been exhausted",  # dashscope
-    "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
-    "You exceeded your current quota",  # gemini
-    "You have exceeded your monthly included credits",  # huggingface
-]
+from .retry_config import IMAGE_DOWNLOAD_ERROR_KEYWORDS, DEFAULT_RETRY_KEYWORDS, DEFAULT_RETRY_API_KEYWORDS
 
 
 class RetryHandler:
@@ -41,7 +16,6 @@ class RetryHandler:
 
     def __init__(self, platform: str):
         self.platform = platform
-        self.retry_keywords = DEFAULT_RETRY_KEYWORDS
         # 获取全局图片缓存
         self.image_cache = None
         try:
@@ -115,7 +89,7 @@ class RetryHandler:
 
     def should_retry_for_rate_limit(self, error_message: str) -> bool:
         """判断是否因为限流而重试"""
-        return any(keyword in error_message for keyword in self.retry_keywords)
+        return any(keyword in error_message for keyword in DEFAULT_RETRY_KEYWORDS)
 
     def should_retry_for_image_error(self, error_message: str, message_config: Dict) -> bool:
         """判断是否因为图片错误而重试"""
