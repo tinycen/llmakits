@@ -32,7 +32,8 @@ def _create_validate_func(choices: list) -> Callable[[str], Tuple[bool, Any]]:
         if not choices:
             return True, values
 
-        if not values:
+        # values 必须是列表，且不能为空
+        if not values or not isinstance(values, list):
             return False, None
 
         # 有choices时进行验证
