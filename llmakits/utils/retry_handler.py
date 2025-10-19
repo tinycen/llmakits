@@ -41,6 +41,7 @@ class RetryHandler:
             # dispatcher.py 导入 message.convert_to_json，而 utils.retry_handler 又导入 dispatcher.ModelDispatcher
             # 如果在模块级别导入会造成循环引用错误
             from ..dispatcher import ModelDispatcher
+
             self.image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             pass
@@ -132,7 +133,7 @@ class RetryHandler:
 
             # 第3次尝试时，检测图片格式并进行base64转换
             if api_retry_count == 1 and img_list:
-                print(f"尝试将图片转换为base64格式...")
+                # print(f"尝试将图片转换为base64格式...")
                 img_list = convert_images_to_base64(img_list, self.image_cache)
                 # 更新message_config，确保转换后的base64图片在后续重试中继续使用
                 # message_config["img_list"] = img_list
