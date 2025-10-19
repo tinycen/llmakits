@@ -32,13 +32,19 @@ def _create_validate_func(choices: list) -> Callable[[str], Tuple[bool, Any]]:
         if not choices:
             return True, values
 
+        if not values:
+            return False, None
+
         # 有choices时进行验证
         validated_values = []
         for value in values:
             validated_value = auto_validate(choices, value)
-            if not validated_value:
-                return False, None
-            validated_values.append(validated_value)
+            if validated_value:
+                validated_values.append(validated_value)
+
+        if len(validated_values) < 1:
+            return False, None
+
         return True, validated_values
 
     return validate_func
