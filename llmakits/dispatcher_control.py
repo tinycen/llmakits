@@ -119,10 +119,22 @@ def dispatcher_with_repair(
                 )
 
                 # 检查修复后的结果
-                print("修复后的结果：")
+                print("修复后的JSON ：")
                 print(fixed_message)
 
-                return fixed_message, repair_tokens
+                # 重要：修复后的结果需要再次验证，确保符合要求
+                if validate_func:
+                    is_valid, validated_result = validate_func(fixed_message)
+                    if is_valid:
+                        return validated_result, repair_tokens
+                    else:
+                        print("修复后的JSON未通过验证")
+                        # 验证失败，继续尝试下一个模型
+                        current_index = result.last_tried_index + 1
+                        continue
+                else:
+                    # 如果没有验证函数，直接返回修复结果
+                    return fixed_message, repair_tokens
             except Exception as e:
                 print(f"修复JSON失败，trying next model ...")
                 # 修复失败，自动 移动到下一个模型
