@@ -78,9 +78,10 @@ class RetryHandler:
                     # 判断 res 是否是列表
                     if isinstance(res, list):
                         res = res[0]
-
-                    error = res.get("error", res.get("errors", {}))
-                    error_message = error.get("message", str(e))
+                    error_message = res.get("message", "")  # cerebras_openai
+                    if not error_message:
+                        error = res.get("error", res.get("errors", {}))
+                        error_message = error.get("message", str(e))
 
             except (AttributeError, ValueError):
                 error_message = str(e)
