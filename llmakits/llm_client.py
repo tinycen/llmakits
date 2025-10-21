@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Optional, Union
 
+from ollama import chat
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
@@ -82,14 +83,23 @@ class BaseClient:
         """创建聊天完成请求"""
         if self.client is None:
             raise RuntimeError("客户端未初始化")
-        return self.client.chat.completions.create(
-            messages=messages,  # type: ignore
-            model=self.model_name,
-            temperature=self.temperature,
-            top_p=self.top_p,
-            stream=self.stream,
-            **self.extra_body,  # 传递额外的参数
-        )
+        if self.platform == "ollama":
+            return chat(
+                messages=messages,
+                model=self.model_name,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                **self.extra_body,  # 传递额外的参数
+            )
+        else:
+            return self.client.chat.completions.create(
+                messages=messages,  # type: ignore
+                model=self.model_name,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                stream=self.stream,
+                **self.extra_body,  # 传递额外的参数
+            )
 
 
 # 定义 BaseOpenai 类

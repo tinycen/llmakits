@@ -1,4 +1,5 @@
 regex
+ollama
 pyyaml
 pandas
 openai
