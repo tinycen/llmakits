@@ -84,11 +84,14 @@ class BaseClient:
         if self.client is None:
             raise RuntimeError("客户端未初始化")
         if self.platform == "ollama":
+            # https://docs.ollama.com/api#generate-request-with-options
             return chat(
                 messages=messages,
                 model=self.model_name,
-                temperature=self.temperature,
-                top_p=self.top_p,
+                options={
+                    "temperature": self.temperature,
+                    "top_p": self.top_p,
+                },
                 **self.extra_body,  # 传递额外的参数
             )
         else:
