@@ -1,5 +1,4 @@
 regex
-ollama
 pyyaml
 pandas
 openai
@@ -7,3 +6,4 @@ zhipuai
 dashscope
 filekits
 funcguard
+ollama >= 0.6.0

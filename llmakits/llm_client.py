@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Optional, Union
+from typing import Optional, Union, Any, Tuple
 
 from ollama import chat
 from openai import OpenAI
@@ -51,9 +51,7 @@ class BaseClient:
                 response = timeout_handler(self._create_chat_completion, args=(messages,), execution_timeout=180)
 
                 # 处理响应
-                result, total_tokens = ResponseHandler.handle_response(
-                    response, self.stream, self.stream_real, process_stream_response
-                )
+                result, total_tokens = self._handle_response(response, self.stream, self.stream_real)
                 return result, total_tokens
 
             except Exception as e:
@@ -103,6 +101,36 @@ class BaseClient:
                 stream=self.stream,
                 **self.extra_body,  # 传递额外的参数
             )
+
+    def _handle_response(
+        self,
+        response: Any,
+        stream: bool,
+        stream_real: bool,
+    ) -> Tuple[Any, int]:
+        """处理响应"""
+
+        total_tokens = 0
+
+        if stream:
+            if stream_real:
+                result = response
+            else:
+                result = timeout_handler(process_stream_response, args=(response,), execution_timeout=180)
+        else:
+            if self.platform == "ollama":
+                result = response.message.content
+                total_tokens = 0
+            else:
+                if response.choices:
+                    result = response.choices[0].message.content
+                    total_tokens = response.usage.total_tokens
+                else:
+                    # 如果没有choices，直接抛出原始response对象
+                    print(f"响应中没有choices，原始响应：{response}")
+                    raise response
+
+        return result, total_tokens
 
 
 # 定义 BaseOpenai 类

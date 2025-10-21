@@ -5,7 +5,6 @@
 
 import time
 from funcguard.printer import print_line
-from funcguard.core import timeout_handler
 from typing import Dict, Tuple, Any, Optional
 from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
 from .retry_config import IMAGE_DOWNLOAD_ERROR_KEYWORDS, DEFAULT_RETRY_KEYWORDS, DEFAULT_RETRY_API_KEYWORDS
@@ -207,31 +206,3 @@ class RetryHandler:
             # 直接重新抛出原始异常，保持异常对象的完整性
             # print(f"其他异常错误：{e}")
             raise e
-
-
-class ResponseHandler:
-    """处理API响应的组件"""
-
-    @staticmethod
-    def handle_response(
-        response: Any, stream: bool, stream_real: bool, process_stream_response_func: Any
-    ) -> Tuple[Any, int]:
-        """处理响应"""
-
-        total_tokens = 0
-
-        if stream:
-            if stream_real:
-                result = response
-            else:
-                result = timeout_handler(process_stream_response_func, args=(response,), execution_timeout=180)
-        else:
-            if response.choices:
-                result = response.choices[0].message.content
-                total_tokens = response.usage.total_tokens
-            else:
-                # 如果没有choices，直接抛出原始response对象
-                print(f"响应中没有choices，原始响应：{response}")
-                raise response
-
-        return result, total_tokens
