@@ -41,9 +41,10 @@ def prepare_messages(
     )
 
     # 构建消息结构
-    messages = _build_message_structure(provider_name, system_content, user_content, img_list)
+    system_message = {"role": "system", "content": system_content}
+    user_message = {"role": "user", "content": user_content}
 
-    return messages
+    return [system_message, user_message]
 
 
 def rebuild_messages_single_image(
@@ -148,6 +149,7 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
             # dispatcher.py 导入 message.convert_to_json，而 message.builder 又导入 dispatcher.ModelDispatcher
             # 如果在模块级别导入会造成循环引用错误
             from ..dispatcher import ModelDispatcher
+
             image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             # 如果无法导入，不使用缓存
@@ -213,18 +215,3 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
         raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
     return processed_img_list
-
-
-def _build_message_structure(
-    provider_name: str, system_content: Any, user_content: Any, img_list: List[str]
-) -> List[Dict[str, Any]]:
-    """构建消息结构"""
-
-    system_message = {"role": "system", "content": system_content}
-    user_message = {"role": "user", "content": user_content}
-
-    # 为ollama添加图片base64编码
-    if provider_name == "ollama" and len(img_list) > 0:
-        user_message["images"] = img_list
-
-    return [system_message, user_message]
