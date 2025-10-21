@@ -5,7 +5,7 @@ from ollama import chat
 from openai import OpenAI
 from zhipuai import ZhipuAI
 
-from .utils.retry_handler import RetryHandler, ResponseHandler
+from .utils.retry_handler import RetryHandler
 from funcguard.printer import print_line
 from funcguard.core import timeout_handler
 
