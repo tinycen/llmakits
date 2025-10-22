@@ -6,6 +6,7 @@ from openai import OpenAI
 from zhipuai import ZhipuAI
 
 from .utils.retry_handler import RetryHandler
+from .message import prepare_request_data
 from funcguard.printer import print_line
 from funcguard.core import timeout_handler
 
@@ -39,7 +40,7 @@ class BaseClient:
         """发送消息的主方法"""
 
         # 准备请求数据
-        messages, request_data = self.retry_handler.prepare_request_data(messages, message_info)
+        messages, request_data = prepare_request_data(self.platform, messages, message_info)
 
         # 执行重试逻辑
         max_retries = 4  # 考虑到 需要切换api key , 以及可能面临图片异常，设置为 4 比较合理

@@ -5,8 +5,8 @@
 
 import time
 from funcguard.printer import print_line
-from typing import Dict, Tuple, Any, Optional
-from ..message import prepare_messages, rebuild_messages_single_image, convert_images_to_base64
+from typing import Dict, Tuple, Any
+from ..message import rebuild_messages_single_image, convert_images_to_base64
 from .retry_config import IMAGE_DOWNLOAD_ERROR_KEYWORDS, DEFAULT_RETRY_KEYWORDS, DEFAULT_RETRY_API_KEYWORDS
 
 
@@ -26,30 +26,6 @@ class RetryHandler:
             self.image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             pass
-
-    def prepare_request_data(self, messages: Any, message_info: Optional[Dict]) -> Tuple[Any, Dict]:
-        """准备请求数据"""
-        message_config = {"system_prompt": "", "user_text": "", "include_img": False, "img_list": []}
-
-        if message_info is not None:
-            message_config.update(
-                {
-                    "system_prompt": message_info["system_prompt"],
-                    "user_text": message_info["user_text"],
-                    "include_img": message_info.get("include_img", False),
-                    "img_list": message_info.get("img_list", []),
-                }
-            )
-
-            messages = prepare_messages(
-                self.platform,
-                message_config["system_prompt"],
-                message_config["user_text"],
-                message_config["include_img"],
-                message_config["img_list"],
-            )
-
-        return messages, message_config
 
     def extract_error_message(self, e: Exception) -> str:
         """提取错误信息"""

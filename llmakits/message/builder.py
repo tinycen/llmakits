@@ -3,7 +3,7 @@
 负责根据不同提供商的要求构建消息格式
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from filekits.base_io import download_encode_base64, batch_download_encode_base64
 
 
@@ -215,3 +215,37 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
         raise Exception(f"图片下载或转换base64失败，url：{img_list}")
 
     return processed_img_list
+
+
+def prepare_request_data(platform: str, messages: Any, message_info: Optional[Dict]) -> Tuple[Any, Dict]:
+    """准备请求数据
+    
+    Args:
+        platform: 平台名称
+        messages: 请求消息对象
+        message_info: 消息信息字典，包含系统提示词、用户文本、是否包含图片和图片列表等
+        
+    Returns:
+        Tuple[Any, Dict]: (更新后的消息对象, 消息配置字典)
+    """
+    message_config = {"system_prompt": "", "user_text": "", "include_img": False, "img_list": []}
+
+    if message_info is not None:
+        message_config.update(
+            {
+                "system_prompt": message_info["system_prompt"],
+                "user_text": message_info["user_text"],
+                "include_img": message_info.get("include_img", False),
+                "img_list": message_info.get("img_list", []),
+            }
+        )
+
+        messages = prepare_messages(
+            platform,
+            message_config["system_prompt"],
+            message_config["user_text"],
+            message_config["include_img"],
+            message_config["img_list"],
+        )
+
+    return messages, message_config
