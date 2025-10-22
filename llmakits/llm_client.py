@@ -128,7 +128,7 @@ class BaseClient:
                     total_tokens = response.usage.total_tokens
                 else:
                     # 如果没有choices，直接抛出原始response对象
-                    print(f"响应中没有choices，原始响应：{response}")
+                    print(f"原始响应中没有choices：{response}")
                     raise response
 
         return result, total_tokens
