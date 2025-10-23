@@ -128,7 +128,7 @@ def dispatcher_with_repair(
                     if is_valid:
                         return validated_result, repair_tokens
                     else:
-                        print("修复后的JSON未通过验证")
+                        print("修复后的JSON未通过验证，trying next model ...")
                         # 验证失败，继续尝试下一个模型
                         current_index = result.last_tried_index + 1
                         continue
