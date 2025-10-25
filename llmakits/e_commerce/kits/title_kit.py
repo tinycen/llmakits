@@ -1,5 +1,6 @@
-from llmakits.message import extract_field
-from llmakits.dispatcher import ModelDispatcher
+from ...message import extract_field
+from ...dispatcher import ModelDispatcher
+from ..validators import remove_chinese
 
 
 def check_title(title: str, max_length: int, min_length: int = 10, min_word: int = 2) -> bool:
@@ -46,6 +47,7 @@ def generate_title(
     max_length: int = 225,
     min_word: int = 2,
     max_attempts: int = 3,
+    allow_chinese: bool = False,
 ) -> str:
     """
     生成商品标题，如果不符合要求则进行修改。
@@ -59,10 +61,12 @@ def generate_title(
     :param max_length: 最大允许长度
     :param min_word: 最少单词数
     :param max_attempts: 最大尝试次数
+    :param allow_chinese: 是否允许中文标题
     :return: 符合要求的标题
     """
     print("检测商品标题……")
-
+    if not allow_chinese:
+        title = remove_chinese(title)
     if title and check_title(title, max_length, min_length, min_word):
         return title
 
@@ -75,6 +79,10 @@ def generate_title(
             )
         return {"system_prompt": system_prompt, "user_text": user_text}
 
+    def validate_func(return_message: str):
+        best_title = extract_field(return_message, "title")
+        return True, best_title
+
     best_title = title
     for attempt in range(1, max_attempts + 1):
 
@@ -84,12 +92,10 @@ def generate_title(
             try_max_length -= 5  # 每次尝试减少最大长度限制
         else:
             try_max_length = max_length
-
-        return_message, _ = dispatcher.execute_with_group(
-            build_message_info(best_title, title_length, try_max_length), group_name, format_json=True
-        )
-        best_title = extract_field(return_message, "title")
-
+        message_info = build_message_info(best_title, title_length, try_max_length)
+        best_title, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True, validate_func=validate_func)  # type: ignore
+        if not allow_chinese:
+            best_title = remove_chinese(best_title)
         if check_title(best_title, max_length, min_length, min_word):  # type: ignore
             return best_title  # type: ignore
 
