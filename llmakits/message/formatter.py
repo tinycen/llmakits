@@ -46,16 +46,23 @@ def extract_json_from_string(text_with_json: str) -> str:
     Raises:
         ValueError: 如果未找到有效的JSON代码块
     """
-    # 优先查找```json ... ```代码块
-    match = re.search(r"```json\s*(\{[\s\S]*?\})\s*```", text_with_json)
-    if match:
-        json_string = match.group(1).strip()
-        try:
-            json.loads(json_string)
-            return json_string
-        except json.JSONDecodeError:
-            print(f"警告: 提取到的```json代码块内容不是有效的JSON: {json_string}")
-            raise ValueError("提取到的```json代码块内容不是有效的JSON")
+    # 优先查找```json ... ```代码块，优先尝试对象 {}，其次数组 []
+    patterns = [
+        r"```json\s*(\{[\s\S]*?\})\s*```",  # 优先匹配对象 {}
+        r"```json\s*(\[[\s\S]*?\])\s*```",  # 其次匹配数组 []
+    ]
+
+    for pattern in patterns:
+        matches = re.findall(pattern, text_with_json)
+        for match in matches:
+            json_string = match.strip()
+            try:
+                json.loads(json_string)
+                return json_string
+            except json.JSONDecodeError:
+                print(f"提取的json代码块无效: {json_string}")
+                continue
+
     # print(text_with_json)
     raise ValueError("未找到有效的JSON代码块")
 
