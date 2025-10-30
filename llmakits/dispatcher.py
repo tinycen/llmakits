@@ -276,7 +276,7 @@ class ModelDispatcher:
             raise Exception("没有可用的模型组，请先初始化dispatcher")
 
         # 获取模型列表（这些是缓存的模型实例，保持API密钥切换状态）
-        llm_models = self.model_groups[group_name]
+        llm_models = self.model_groups.get(group_name, [])
         if not llm_models:
             raise Exception(f"未找到模型组: {group_name}")
 
