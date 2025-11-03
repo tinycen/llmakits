@@ -82,8 +82,9 @@ def dispatcher_with_repair(
         if result.success:
             return result.return_message, result.total_tokens
 
+        error_message = str(result.error)
         # 失败处理，尝试修复（仅限 JSON 错误且有原始消息）
-        if result.return_message and "json_error" in str(result.error):
+        if result.return_message and fix_json_config and "json_error" in error_message:
             print("尝试修复JSON……")
             # 构造修复消息
             user_text = f"以下是一个格式错误的JSON字符串，请修复它：\n\n{result.return_message}"
@@ -128,7 +129,7 @@ def dispatcher_with_repair(
                     if is_valid:
                         return validated_result, repair_tokens
                     else:
-                        print("修复后的JSON未通过验证，trying next model ...")
+                        print(f"当前模型失败（索引 {current_index}），修复后的JSON未通过验证，trying next model ...")
                         # 验证失败，继续尝试下一个模型
                         current_index = result.last_tried_index + 1
                         continue
@@ -136,10 +137,15 @@ def dispatcher_with_repair(
                     # 如果没有验证函数，直接返回修复结果
                     return fixed_message, repair_tokens
             except Exception as e:
-                print(f"修复JSON失败，trying next model ...")
+                print(f"当前模型失败（索引 {current_index}），修复JSON失败，trying next model ...")
                 # 修复失败，自动 移动到下一个模型
                 current_index = result.last_tried_index + 1
                 continue
+
+        elif "All models failed" not in error_message:
+            print(f"当前模型失败（索引 {current_index}），trying next model ...")
+            current_index = result.last_tried_index + 1
+
         else:
             raise result.error  # type: ignore
 
