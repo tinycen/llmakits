@@ -17,6 +17,7 @@ DEFAULT_RETRY_KEYWORDS = [
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
     "Free credits temporarily have rate limits",  # vercel
+    "Rate limit exceeded: free-models-per-min",  # openrouter
 ]
 
 DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
