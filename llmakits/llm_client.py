@@ -124,7 +124,10 @@ class BaseClient:
                 total_tokens = 0
             else:
                 if response.choices:
-                    result = response.choices[0].message.content
+                    if self.platform == "gitcode":
+                        result = response.choices[0].delta["content"]
+                    else:
+                        result = response.choices[0].message.content
                     total_tokens = response.usage.total_tokens
                 else:
                     # 如果没有choices，检查response是否为异常对象，如果不是则转换为异常
