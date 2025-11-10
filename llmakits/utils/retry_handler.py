@@ -6,7 +6,12 @@
 from funcguard import print_line, time_wait
 from typing import Dict, Tuple, Any
 from ..message import rebuild_messages_single_image, convert_images_to_base64
-from .retry_config import IMAGE_DOWNLOAD_ERROR_KEYWORDS, DEFAULT_RETRY_KEYWORDS, DEFAULT_RETRY_API_KEYWORDS
+from .retry_config import (
+    IMAGE_DOWNLOAD_ERROR_KEYWORDS,
+    DEFAULT_RETRY_KEYWORDS,
+    MIN_LIMIT_ERROR_KEYWORDS,
+    DEFAULT_RETRY_API_KEYWORDS,
+)
 
 
 class RetryHandler:
@@ -107,7 +112,7 @@ class RetryHandler:
                 img_list=img_list,
             )
         else:
-            if "free-models-per-min" in error_message:
+            if any(keyword in error_message for keyword in MIN_LIMIT_ERROR_KEYWORDS):
                 time_wait(60 * (api_retry_count + 1))  # 等待一段时间后重试
             else:
                 time_wait(10 * (api_retry_count + 1))  # 等待一段时间后重试

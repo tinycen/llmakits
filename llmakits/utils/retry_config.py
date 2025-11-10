@@ -9,6 +9,10 @@ IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Failed to download multimodal content",
     "Download multimodal file timed out",
 ]
+MIN_LIMIT_ERROR_KEYWORDS = [
+    "Rate limit exceeded: free-models-per-min",  # openrouter
+    "is temporarily rate-limited upstream",  # openrouter
+]
 
 # 默认的重试关键词列表
 DEFAULT_RETRY_KEYWORDS = [
@@ -17,9 +21,9 @@ DEFAULT_RETRY_KEYWORDS = [
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
     "Free credits temporarily have rate limits",  # vercel
-    "Rate limit exceeded: free-models-per-min",  # openrouter
 ]
 
+DEFAULT_RETRY_KEYWORDS.extend(MIN_LIMIT_ERROR_KEYWORDS)
 DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
 
 # API限流相关的重试关键词列表
