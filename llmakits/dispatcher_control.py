@@ -15,6 +15,65 @@ JSON 错误 → 继续下一个模型
 from typing import Dict, Any
 from .dispatcher import ModelDispatcher
 from typing import Dict, Any, Optional, Callable
+from funcguard import print_line, print_block
+
+
+def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) -> tuple[str, str, int]:
+    """
+    获取指定索引的模型信息
+
+    Args:
+        dispatcher: 模型调度器
+        group_name: 模型组名称
+        index: 模型索引
+
+    Returns:
+        (sdk名称, 模型名称, 模型总数)
+    """
+    llm_models = dispatcher.model_groups.get(group_name, [])
+    models_num = len(llm_models)
+
+    if index < models_num:
+        model_info = llm_models[index]
+        sdk_name = model_info.get('sdk_name', 'unknown_sdk')
+        model_name = model_info.get('model_name', 'unknown_model')
+        return sdk_name, model_name, models_num
+    return 'unknown_sdk', 'unknown_model', models_num
+
+
+def _print_next_model_info(dispatcher: ModelDispatcher, group_name: str, current_idx: int) -> None:
+    """
+    打印下一个模型的信息
+
+    Args:
+        dispatcher: 模型调度器
+        group_name: 模型组名称
+        current_idx: 当前模型索引
+    """
+    next_sdk_name, next_model_name, models_num = _get_model_info(dispatcher, group_name, current_idx + 1)
+
+    if current_idx + 1 < models_num:
+        next_base_model_info = f"Next model : \n{current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
+        print_line(".")
+        print(next_base_model_info)
+    else:
+        print("Next model does not exist.")
+
+
+def _print_current_model_info(dispatcher: ModelDispatcher, group_name: str, current_idx: int) -> str:
+    """
+    获取当前模型信息字符串
+
+    Args:
+        dispatcher: 模型调度器
+        group_name: 模型组名称
+        current_idx: 当前模型索引
+
+    Returns:
+        当前模型信息字符串
+    """
+    sdk_name, model_name, models_num = _get_model_info(dispatcher, group_name, current_idx)
+    return f"{current_idx+1}/{models_num} Model {sdk_name} : {model_name}"
 
 
 def dispatcher_with_repair(
@@ -129,7 +188,13 @@ def dispatcher_with_repair(
                     if is_valid:
                         return validated_result, repair_tokens
                     else:
-                        print(f"当前模型失败（索引 {current_index}），修复后的JSON未通过验证，trying next model ...")
+                        current_model_info = _print_current_model_info(dispatcher, group_name, current_index)
+                        print_line("=")
+                        print(current_model_info)
+                        content = "修复后的JSON未通过验证, trying next model..."
+                        print_block(current_model_info, content)
+                        _print_next_model_info(dispatcher, group_name, current_index)
+                        print_line("=")
                         # 验证失败，继续尝试下一个模型
                         current_index = result.last_tried_index + 1
                         continue
@@ -137,13 +202,23 @@ def dispatcher_with_repair(
                     # 如果没有验证函数，直接返回修复结果
                     return fixed_message, repair_tokens
             except Exception as e:
-                print(f"当前模型失败（索引 {current_index}），修复JSON失败，trying next model ...")
+                current_model_info = _print_current_model_info(dispatcher, group_name, current_index)
+                print_line("=")
+                print(current_model_info)
+                print(f"修复JSON失败: {e}")
+                _print_next_model_info(dispatcher, group_name, current_index)
+                print_line("=")
                 # 修复失败，自动 移动到下一个模型
                 current_index = result.last_tried_index + 1
                 continue
 
         elif "All models failed" not in error_message:
-            print(f"当前模型失败（索引 {current_index}），trying next model ...")
+            current_model_info = _print_current_model_info(dispatcher, group_name, current_index)
+            print_line("=")
+            print(current_model_info)
+            print("model failed, trying next model ...")
+            _print_next_model_info(dispatcher, group_name, current_index)
+            print_line("=")
             current_index = result.last_tried_index + 1
 
         else:
