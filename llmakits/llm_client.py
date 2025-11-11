@@ -64,7 +64,7 @@ class BaseClient:
                 if should_switch_key:
                     # 切换API密钥
                     if not self.switch_api_key():
-                        print("所有API密钥都已用尽，无法继续")
+                        print("所有API密钥都已用尽！")
                         raise Exception('API_KEY_EXHAUSTED')
 
                 if should_retry:
