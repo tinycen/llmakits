@@ -46,7 +46,7 @@ class RetryHandler:
                     res = response.model_dump()
                     error = res.get("error", {})
                     message = error.get("message", "")
-                    metadata = error.get("metadata", {})
+                    metadata = error.get("metadata", {})  # openrouter
                     raw = metadata.get("raw", "")
                     provider_name = metadata.get("provider_name", "")
                     error_message = f"message: {message} : provider: {provider_name} , {raw}"
@@ -57,10 +57,15 @@ class RetryHandler:
                     # 判断 res 是否是列表
                     if isinstance(res, list):
                         res = res[0]
-                    error_message = res.get("message", "")  # cerebras_openai
-                    if not error_message:
-                        error = res.get("error", res.get("errors", {}))
-                        error_message = error.get("message", str(e))
+                    message = res.get("message", "")  # cerebras_openai
+                    error = res.get("error", res.get("errors", {}))
+                    if not message:
+                        message = error.get("message", str(e))
+
+                    metadata = error.get("metadata", {})  # openrouter
+                    raw = metadata.get("raw", "")
+                    provider_name = metadata.get("provider_name", "")
+                    error_message = f"message: {message} : provider: {provider_name} , {raw}"
 
             except (AttributeError, ValueError):
                 error_message = str(e)
