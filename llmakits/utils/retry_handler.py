@@ -49,7 +49,7 @@ class RetryHandler:
                     metadata = error.get("metadata", {})  # openrouter
                     raw = metadata.get("raw", "")
                     provider_name = metadata.get("provider_name", "")
-                    error_message = f"message: {message} : provider: {provider_name} , {raw}"
+                    error_message = f"message: {message} : provider: {provider_name} , detail: {raw}"
 
                 # hasattr 检查 response 是否有 json 方法
                 elif hasattr(response, 'json'):
@@ -65,7 +65,7 @@ class RetryHandler:
                     metadata = error.get("metadata", {})  # openrouter
                     raw = metadata.get("raw", "")
                     provider_name = metadata.get("provider_name", "")
-                    error_message = f"message: {message} : provider: {provider_name} , {raw}"
+                    error_message = f"message: {message} : provider: {provider_name} , detail: {raw}"
 
             except (AttributeError, ValueError):
                 error_message = str(e)
