@@ -31,6 +31,29 @@ class RetryHandler:
         except ImportError:
             pass
 
+    def _build_error_message(self, error_data: Dict, original_exception: Exception) -> str:
+        """构建错误消息字符串
+        
+        参数:
+            error_data: 包含错误信息的数据字典
+            original_exception: 原始异常对象，用于备用错误消息
+            
+        返回:
+            格式化后的错误消息字符串
+        """
+        error = error_data.get("error", {})
+        message = error_data.get("message", "")
+        
+        # 如果没有message，尝试从error中获取
+        if not message:
+            message = error.get("message", str(original_exception))
+            
+        metadata = error.get("metadata", {})  # openrouter
+        raw = metadata.get("raw", "")
+        provider_name = metadata.get("provider_name", "")
+        
+        return f"message: {message} : provider: {provider_name} , detail: {raw}"
+
     def extract_error_message(self, e: Exception) -> str:
         """提取错误信息"""
         error_message = str(e)
@@ -44,12 +67,7 @@ class RetryHandler:
             try:
                 if hasattr(response, 'model_dump'):  # 兼容 openai
                     res = response.model_dump()
-                    error = res.get("error", {})
-                    message = error.get("message", "")
-                    metadata = error.get("metadata", {})  # openrouter
-                    raw = metadata.get("raw", "")
-                    provider_name = metadata.get("provider_name", "")
-                    error_message = f"message: {message} : provider: {provider_name} , detail: {raw}"
+                    error_message = self._build_error_message(res, e)
 
                 # hasattr 检查 response 是否有 json 方法
                 elif hasattr(response, 'json'):
@@ -57,15 +75,7 @@ class RetryHandler:
                     # 判断 res 是否是列表
                     if isinstance(res, list):
                         res = res[0]
-                    message = res.get("message", "")  # cerebras_openai
-                    error = res.get("error", res.get("errors", {}))
-                    if not message:
-                        message = error.get("message", str(e))
-
-                    metadata = error.get("metadata", {})  # openrouter
-                    raw = metadata.get("raw", "")
-                    provider_name = metadata.get("provider_name", "")
-                    error_message = f"message: {message} : provider: {provider_name} , detail: {raw}"
+                    error_message = self._build_error_message(res, e)
 
             except (AttributeError, ValueError):
                 error_message = str(e)
