@@ -33,26 +33,37 @@ class RetryHandler:
 
     def _build_error_message(self, error_data: Dict, original_exception: Exception) -> str:
         """构建错误消息字符串
-        
+
         参数:
             error_data: 包含错误信息的数据字典
             original_exception: 原始异常对象，用于备用错误消息
-            
+
         返回:
             格式化后的错误消息字符串
         """
         error = error_data.get("error", {})
         message = error_data.get("message", "")
-        
+
         # 如果没有message，尝试从error中获取
         if not message:
             message = error.get("message", str(original_exception))
-            
+
         metadata = error.get("metadata", {})  # openrouter
         raw = metadata.get("raw", "")
         provider_name = metadata.get("provider_name", "")
-        
-        return f"message: {message} : provider: {provider_name} , detail: {raw}"
+
+        # 构建基础错误消息
+        error_parts = [f"message: {message}"]
+
+        # 只在有值时添加provider信息
+        if provider_name:
+            error_parts.append(f"provider: {provider_name}")
+
+        # 只在有值时添加detail信息
+        if raw:
+            error_parts.append(f"detail: {raw}")
+
+        return " , ".join(error_parts)
 
     def extract_error_message(self, e: Exception) -> str:
         """提取错误信息"""
