@@ -121,8 +121,14 @@ def _build_content_by_provider(
                 raise Exception(f"图片列表转base64失败，img_list：{img_list}")
 
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
-        user_content.append({"type": "text", "text": user_text})
-        system_content = [{"type": "text", "text": system_prompt}]
+        if provider_name in ["gitcode"]:
+            system_prompt_user = f"# 任务角色与设定 \n{system_prompt}\n"
+            user_prompt = f"# 任务相关信息 \n{user_text}\n"
+            user_content.append({"type": "text", "text": system_prompt_user + user_prompt})
+            system_content = []
+        else:
+            user_content.append({"type": "text", "text": user_text})
+            system_content = [{"type": "text", "text": system_prompt}]
 
     return system_content, user_content
 
@@ -219,12 +225,12 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
 
 def prepare_request_data(platform: str, messages: Any, message_info: Optional[Dict]) -> Tuple[Any, Dict]:
     """准备请求数据
-    
+
     Args:
         platform: 平台名称
         messages: 请求消息对象
         message_info: 消息信息字典，包含系统提示词、用户文本、是否包含图片和图片列表等
-        
+
     Returns:
         Tuple[Any, Dict]: (更新后的消息对象, 消息配置字典)
     """
