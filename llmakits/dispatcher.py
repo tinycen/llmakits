@@ -148,6 +148,11 @@ class ModelDispatcher:
             model_info = llm_models[idx]
             sdk_name = model_info.get('sdk_name', 'unknown_sdk')
             model_name = model_info.get('model_name', 'unknown_model')
+            
+            # 如果是未知模型，直接结束循环
+            if sdk_name == 'unknown_sdk' or model_name == 'unknown_model':
+                break
+                
             base_model_info = f"{idx+1}/{models_num} Model {sdk_name} : {model_name}"
 
             try:
