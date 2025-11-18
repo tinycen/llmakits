@@ -41,10 +41,13 @@ def prepare_messages(
     )
 
     # 构建消息结构
-    system_message = {"role": "system", "content": system_content}
     user_message = {"role": "user", "content": user_content}
 
-    return [system_message, user_message]
+    if system_content:
+        system_message = {"role": "system", "content": system_content}
+        return [system_message, user_message]
+    else:
+        return [user_message]
 
 
 def rebuild_messages_single_image(
@@ -98,10 +101,16 @@ def _build_content_by_provider(
     if provider_name == "dashscope":
         user_content = [{"image": img} for img in img_list]
         user_content.append({"text": user_text})
-        system_content = [{"text": system_prompt}]
+        if system_prompt:
+            system_content = [{"text": system_prompt}]
+        else:
+            system_content = []
 
     elif provider_name == "ollama":
-        system_content = system_prompt
+        if system_prompt:
+            system_content = system_prompt
+        else:
+            system_content = []
         user_content = user_text
         try:
             # todu 这里后续需要修改
@@ -122,13 +131,19 @@ def _build_content_by_provider(
 
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
         if provider_name in ["gitcode"]:
-            system_prompt_user = f"# 任务角色与设定 \n{system_prompt}\n"
+            if system_prompt:
+                system_prompt_user = f"# 任务角色与设定 \n{system_prompt}\n"
+            else:
+                system_prompt_user = ""
             user_prompt = f"# 任务相关信息 \n{user_text}\n"
             user_content.append({"type": "text", "text": system_prompt_user + user_prompt})
             system_content = []
         else:
             user_content.append({"type": "text", "text": user_text})
-            system_content = [{"type": "text", "text": system_prompt}]
+            if system_prompt:
+                system_content = [{"type": "text", "text": system_prompt}]
+            else:
+                system_content = []
 
     return system_content, user_content
 
@@ -234,24 +249,26 @@ def prepare_request_data(platform: str, messages: Any, message_info: Optional[Di
     Returns:
         Tuple[Any, Dict]: (更新后的消息对象, 消息配置字典)
     """
-    message_config = {"system_prompt": "", "user_text": "", "include_img": False, "img_list": []}
+    message_config = {"user_text": "", "include_img": False, "img_list": []}
 
     if message_info is not None:
         message_config.update(
             {
-                "system_prompt": message_info["system_prompt"],
                 "user_text": message_info["user_text"],
                 "include_img": message_info.get("include_img", False),
                 "img_list": message_info.get("img_list", []),
             }
         )
 
+        system_prompt = message_info["system_prompt"]
+        if system_prompt:
+            message_config["system_prompt"] = system_prompt
+
         messages = prepare_messages(
             platform,
-            message_config["system_prompt"],
+            message_config.get("system_prompt", ""),
             message_config["user_text"],
             message_config["include_img"],
             message_config["img_list"],
         )
-
     return messages, message_config
