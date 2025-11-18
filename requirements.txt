@@ -3,6 +3,7 @@ pyyaml
 pandas
 openai
 zhipuai
+streamlit
 dashscope
 filekits
 funcguard
