@@ -34,4 +34,5 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "You exceeded your current quota",  # gemini
     "You have exceeded your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
+    "免费使用额度已用完",  # gitcode , modelscope
 ]
