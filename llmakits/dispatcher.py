@@ -40,9 +40,11 @@ class ModelDispatcher:
 
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys, global_config)
+            self.model_group_names = list(self.model_groups.keys())  # 新增：模型组名称列表
         else:
             self.model_groups = {}
             self.model_keys = {}
+            self.model_group_names = []  # 新增：模型组名称列表
 
     @classmethod
     def get_image_cache(cls) -> ImageBase64Cache:
@@ -148,11 +150,11 @@ class ModelDispatcher:
             model_info = llm_models[idx]
             sdk_name = model_info.get('sdk_name', 'unknown_sdk')
             model_name = model_info.get('model_name', 'unknown_model')
-            
+
             # 如果是未知模型，直接结束循环
             if sdk_name == 'unknown_sdk' or model_name == 'unknown_model':
                 break
-                
+
             base_model_info = f"{idx+1}/{models_num} Model {sdk_name} : {model_name}"
 
             try:
