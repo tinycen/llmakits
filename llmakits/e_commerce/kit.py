@@ -37,11 +37,11 @@ def translate_options(
         else:
             return False, None
 
-    return_message, _ = dispatcher.execute_with_group(  # type: ignore
+    translated_options, _ = dispatcher.execute_with_group(  # type: ignore
         {"user_text": user_text, "system_prompt": system_prompt},
         group_name,
         format_json=True,
         validate_func=validate_func,
     )
-    # 由于validate_func返回验证通过的值，这里直接使用return_message
-    return return_message
+    # validate_func返回验证通过的值
+    return translated_options
