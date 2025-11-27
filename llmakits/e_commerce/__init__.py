@@ -12,6 +12,7 @@ from .kits.attribute_kit import fill_attr
 from .kits.cat_kit import predict_cat_direct, predict_cat_gradual
 
 __all__ = [
+    "translate_options",
     "contains_chinese",
     "remove_chinese",
     "contains_special_symbols",
