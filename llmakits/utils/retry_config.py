@@ -29,6 +29,8 @@ DEFAULT_RETRY_KEYWORDS.extend(IMAGE_DOWNLOAD_ERROR_KEYWORDS)
 # API限流相关的重试关键词列表
 DEFAULT_RETRY_API_KEYWORDS = [
     "Request limit exceeded",  # modelscope
+    "You have exceeded today",  # modelscope
+    "We have to rate limit you",  # modelscope
     "The free tier of the model has been exhausted",  # dashscope
     "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
     "You exceeded your current quota",  # gemini
