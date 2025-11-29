@@ -21,6 +21,7 @@ DEFAULT_RETRY_KEYWORDS = [
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
     "Free credits temporarily have rate limits",  # vercel
+    "experiencing high traffic right now! Please try again soon",  # cerebras
 ]
 
 DEFAULT_RETRY_KEYWORDS.extend(MIN_LIMIT_ERROR_KEYWORDS)
@@ -31,6 +32,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "Request limit exceeded",  # modelscope
     "You have exceeded today",  # modelscope
     "We have to rate limit you",  # modelscope
+    "make sure your associated Aliyun account is real-name verified",  # modelscope
     "The free tier of the model has been exhausted",  # dashscope
     "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
     "You exceeded your current quota",  # gemini
