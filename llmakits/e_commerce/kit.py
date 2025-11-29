@@ -19,7 +19,7 @@ def translate_options(
     """
     # 首先检测源语言是否包含中文，如果不包含中文，就直接返回原语言
     if not contains_chinese(str(options)):
-        return options, 0
+        return options
 
     user_text = f"title:{title},options:{options},请翻译为:{to_lang}语言"
 
