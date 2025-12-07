@@ -20,7 +20,6 @@ from .validator import create_category_validate_func
 def predict_cat_direct(
     dispatcher: ModelDispatcher,
     product: dict,
-    cat_tree: Any,
     predict_config: dict,
     fix_json_config: dict = {},
 ) -> List[Dict[str, Any]]:
@@ -32,12 +31,10 @@ def predict_cat_direct(
     Args:
         dispatcher: 模型调度器
         product: 商品信息字典，包含 "title" 和 "image_url"
-        cat_tree: 类目树数据
         predict_config:
             {
                 system_prompt: 系统提示词,
-                use_rag: 是否使用RAG（可选，默认False）,
-                user_suggest_cats: [{"cat_id": "……", "cat_name": "……"}]  # 可选：用户建议类目范围
+                category_all: [{"cat_id": "……", "cat_name": "……"}]  # 全部类目范围
             }
         fix_json_config:
             {
@@ -49,21 +46,10 @@ def predict_cat_direct(
     Returns:
         预测的类目结果列表
     """
-    # 准备商品信息
+    # 准备商品信息 和 类目数据
     title = product.get("title", "")
     image_url = product.get("image_url", "")
-
-    # 准备类目数据
-    category_all = prepare_category_data(cat_tree)
-    use_rag = predict_config.get("use_rag", False)
-    user_suggest_cats = predict_config.get("user_suggest_cats", [])
-
-    if use_rag:
-        category_all = user_suggest_cats
-        # matched_results = match_recall(category_all, title)
-        # category_all = match_recall_merge(matched_results, user_suggest_cats)
-        # if not category_all:
-        #     raise ValueError("RAG匹配结果为空，且用户建议类目也为空，无法进行预测")
+    category_all = predict_config["category_all"]
 
     # 创建验证函数
     validate_func = create_category_validate_func(category_all)

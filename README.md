@@ -560,20 +560,26 @@ title = generate_title(
 )
 
 # 预测商品类目
-cat_tree = {}  # 类目树数据
+category_all = [{"cat_id": "1", "cat_name": "类目1"},
+    {"cat_id": "2", "cat_name": "类目2"}]  # 全部类目数据
+
 categories = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "商品标题", "image_url": ""},  # 商品信息字典
-    cat_tree=cat_tree,
-    system_prompt="你是一个商品分类专家，请根据商品标题预测合适的商品类目"
+    predict_config={
+        "system_prompt": "你是一个商品分类专家，请根据商品标题预测合适的商品类目",
+        "category_all": category_all
+    }
 )
 
 # 预测商品类目（带JSON修复功能）
 categories_with_fix = predict_cat_direct(
     dispatcher=dispatcher,
     product={"title": "护发喷雾", "image_url": "https://example.com/image.jpg"},
-    cat_tree=cat_tree,
-    system_prompt="你是一个商品分类专家，请根据商品标题和图片预测合适的商品类目",
+    predict_config={
+        "system_prompt": "你是一个商品分类专家，请根据商品标题和图片预测合适的商品类目",
+        "category_all": category_all
+    },
     fix_json_config={
         "system_prompt": "你是一个JSON格式修复专家，请修复下面错误的JSON格式",
         "group_name": "fix_json"
