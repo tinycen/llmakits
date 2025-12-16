@@ -17,6 +17,7 @@ MIN_LIMIT_ERROR_KEYWORDS = [
 # 默认的重试关键词列表
 DEFAULT_RETRY_KEYWORDS = [
     "Too many requests",
+    "频繁操作，请稍后重试",  # gitcode
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
