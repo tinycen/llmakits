@@ -133,7 +133,7 @@ def validate_html_fix(
             "system_prompt": system_prompt,
             "user_text": f"allowed_tags:{allowed_tags},html:{html_string},error_messages:{error_messages}",
         }
-        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)
+        return_message, _ = dispatcher.execute_with_group(message_info, group_name, format_json=True)  # type: ignore
         html_string = return_message["html"]
         is_valid, error_messages = validate_html(html_string, allowed_tags)
 

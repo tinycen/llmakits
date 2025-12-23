@@ -38,12 +38,12 @@ def generate_html(
                 else:
                     print(f"移除中文字符……")
                     html_string = remove_chinese(html_string)
-        return True, html_string
+        des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group, fix_prompt)  # type: ignore
+        return True, des_html
 
     message_info = {"system_prompt": generate_prompt, "user_text": product_info}
-    html_string, _ = dispatcher.execute_with_group(  # pyright: ignore[reportAssignmentType]
+    des_html, _ = dispatcher.execute_with_group(  # pyright: ignore[reportAssignmentType]
         message_info, generate_group, format_json=True, validate_func=validate_func
     )
 
-    des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group, fix_prompt)
     return des_html
