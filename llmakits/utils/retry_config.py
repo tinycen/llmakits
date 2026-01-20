@@ -36,6 +36,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "make sure your associated Aliyun account is real-name verified",  # modelscope
     "The free tier of the model has been exhausted",  # dashscope
     "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
+    "API key USD spend limit exceeded",  # openrouter
     "You exceeded your current quota",  # gemini
     "You have exceeded your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
