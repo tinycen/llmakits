@@ -94,7 +94,7 @@ class ModelDispatcher:
             self.model_groups[group_name] = new_group_models
         return
 
-    def _print_next_model_info(self, llm_models: List[Dict[str, Any]], current_idx: int, models_num: int):
+    def _print_next_model_info(self, llm_models: List[Dict[str, Any]], current_idx: int, models_num: int, printed_model_indices: set):
         """
         打印下一个模型的信息
 
@@ -102,16 +102,20 @@ class ModelDispatcher:
             llm_models: LLM模型列表
             current_idx: 当前模型索引
             models_num: 模型总数
+            printed_model_indices: 已打印过的模型索引集合
         """
         if current_idx < models_num - 1:
-            next_model_info = llm_models[current_idx + 1]
+            next_idx = current_idx + 1
+            next_model_info = llm_models[next_idx]
             next_sdk_name = next_model_info.get('sdk_name', 'unknown_sdk')
             next_model_name = next_model_info.get('model_name', 'unknown_model')
             next_base_model_info = (
-                f"Next model : \n{current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
+                f"Next model : \n{next_idx+1}/{models_num} Model {next_sdk_name} : {next_model_name}"
             )
             print_line(".")
             self.logger.debug(next_base_model_info)
+            # 标记下一个模型的信息已打印
+            printed_model_indices.add(next_idx)
 
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
@@ -146,6 +150,9 @@ class ModelDispatcher:
             if return_detailed:
                 return ExecutionResult(success=False, error=error)
             raise error
+
+        # 用于跟踪已打印过"下一个模型"信息的模型索引
+        printed_model_indices = set()
 
         # 从指定索引开始遍历
         for idx in range(start_index, models_num):
@@ -191,9 +198,13 @@ class ModelDispatcher:
                         else:
                             # 传统模式：继续尝试下一个模型
                             content = "JSON解析失败, trying next model..."
-                            print(base_model_info, content, sep="\n")
+                            # 只有当当前模型信息未被打印过时才打印
+                            if idx not in printed_model_indices:
+                                print(base_model_info, content, sep="\n")
+                            else:
+                                print(content)
                             self.model_switch_count += 1
-                            self._print_next_model_info(llm_models, idx, models_num)
+                            self._print_next_model_info(llm_models, idx, models_num, printed_model_indices)
                             continue
 
                 # 验证逻辑
@@ -211,10 +222,14 @@ class ModelDispatcher:
                             return validated_value, total_tokens
                     else:
                         content = "输出结果：条件校验失败, trying next model ..."
-                        print(base_model_info, content, sep="\n")
+                        # 只有当当前模型信息未被打印过时才打印
+                        if idx not in printed_model_indices:
+                            print(base_model_info, content, sep="\n")
+                        else:
+                            print(content)
                         self.model_switch_count += 1
                         # 打印下一个模型的信息
-                        self._print_next_model_info(llm_models, idx, models_num)
+                        self._print_next_model_info(llm_models, idx, models_num, printed_model_indices)
                         continue
 
                 # 成功返回
@@ -228,7 +243,9 @@ class ModelDispatcher:
 
             except Exception as e:
                 print_line("=")
-                self.logger.debug(base_model_info)
+                # 只有当当前模型信息未被打印过时才打印
+                if idx not in printed_model_indices:
+                    self.logger.debug(base_model_info)
 
                 # 检查是否是API密钥用尽异常
                 if str(e) == 'API_KEY_EXHAUSTED':
@@ -243,7 +260,7 @@ class ModelDispatcher:
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
                     # 打印下一个模型的信息
-                    self._print_next_model_info(llm_models, idx, models_num)
+                    self._print_next_model_info(llm_models, idx, models_num, printed_model_indices)
                     print_line("=")
                     self.model_switch_count += 1
                     continue
