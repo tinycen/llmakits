@@ -3,7 +3,7 @@
 """
 
 from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
-from funcguard import print_line, print_block, time_monitor
+from funcguard import print_line, time_monitor, setup_logger
 from filekits.base_io import save_json
 from .message import convert_to_json
 from .load_model import load_models
@@ -37,6 +37,7 @@ class ModelDispatcher:
         self.model_switch_count = 0
         self.exhausted_models = []
         self.warning_time = None  # 用于 显示超时警告的阈值，单位秒
+        self.logger = setup_logger("dispatcher")  # 新增：日志记录器
 
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys, global_config)
@@ -66,9 +67,10 @@ class ModelDispatcher:
 
     # 输出报告
     def report(self):
-        print(f"Model switch count: {self.model_switch_count}")
+        if self.model_switch_count > 0:
+            print(f"Model switch count: {self.model_switch_count}")
         if self.exhausted_models:
-            print(f"Exhausted models: {self.exhausted_models}")
+            self.logger.error(f"Exhausted models: {self.exhausted_models}")
         # 新增：输出缓存统计
         cache_stats = self.get_cache_stats()
         print(f"Image cache: {cache_stats['cache_size']}/{cache_stats['max_size']}")
@@ -109,7 +111,7 @@ class ModelDispatcher:
                 f"Next model : \n{current_idx+2}/{models_num} Model {next_sdk_name} : {next_model_name}"
             )
             print_line(".")
-            print(next_base_model_info)
+            self.logger.debug(next_base_model_info)
 
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
@@ -169,7 +171,8 @@ class ModelDispatcher:
                     return_message, total_tokens = result
                     if total_seconds > self.warning_time:
                         content = f"{sdk_name} : {model_name} execute_task took {total_seconds}s"
-                        print_block("Warning: Time-consuming operation", content)
+                        log_content = f"{base_model_info}\nTime-consuming operation:\n{content}"
+                        self.logger.warning(log_content)
                 else:
                     return_message, total_tokens = model_info["model"].send_message([], message_info)
 
@@ -188,7 +191,7 @@ class ModelDispatcher:
                         else:
                             # 传统模式：继续尝试下一个模型
                             content = "JSON解析失败, trying next model..."
-                            print_block(base_model_info, content)
+                            print(base_model_info, content, sep="\n")
                             self.model_switch_count += 1
                             self._print_next_model_info(llm_models, idx, models_num)
                             continue
@@ -208,7 +211,7 @@ class ModelDispatcher:
                             return validated_value, total_tokens
                     else:
                         content = "输出结果：条件校验失败, trying next model ..."
-                        print_block(base_model_info, content)
+                        print(base_model_info, content, sep="\n")
                         self.model_switch_count += 1
                         # 打印下一个模型的信息
                         self._print_next_model_info(llm_models, idx, models_num)
@@ -225,17 +228,17 @@ class ModelDispatcher:
 
             except Exception as e:
                 print_line("=")
-                print(base_model_info)
+                self.logger.debug(base_model_info)
 
                 # 检查是否是API密钥用尽异常
                 if str(e) == 'API_KEY_EXHAUSTED':
-                    print(f"{sdk_name} - {model_name} API密钥 已用完")
+                    self.logger.warning(f"{sdk_name} - {model_name} API密钥 已用完")
                     # 从模型组中删除该模型
                     self._remove_exhausted_model(sdk_name, model_name)
                     self.exhausted_models.append(f"{sdk_name}_{model_name}")
                 else:
                     # 打印详细的错误信息
-                    print(f"错误详情: {e}")
+                    self.logger.error(f"错误详情: {e}")
 
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
