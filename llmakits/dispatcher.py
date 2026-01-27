@@ -94,7 +94,9 @@ class ModelDispatcher:
             self.model_groups[group_name] = new_group_models
         return
 
-    def _print_next_model_info(self, llm_models: List[Dict[str, Any]], current_idx: int, models_num: int, printed_model_indices: set):
+    def _print_next_model_info(
+        self, llm_models: List[Dict[str, Any]], current_idx: int, models_num: int, printed_model_indices: set
+    ):
         """
         打印下一个模型的信息
 
@@ -245,23 +247,22 @@ class ModelDispatcher:
                 print_line("=")
                 # 只有当当前模型信息未被打印过时才打印
                 if idx not in printed_model_indices:
-                    self.logger.debug(base_model_info)
+                    print(base_model_info)
 
                 # 检查是否是API密钥用尽异常
                 if str(e) == 'API_KEY_EXHAUSTED':
-                    self.logger.warning(f"{sdk_name} - {model_name} API密钥 已用完")
+                    self.logger.error(f"{sdk_name} - {model_name} API密钥 已用完")
                     # 从模型组中删除该模型
                     self._remove_exhausted_model(sdk_name, model_name)
                     self.exhausted_models.append(f"{sdk_name}_{model_name}")
                 else:
                     # 打印详细的错误信息
                     self.logger.error(f"错误详情: {e}")
-
+                print_line("=")
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
                     # 打印下一个模型的信息
                     self._print_next_model_info(llm_models, idx, models_num, printed_model_indices)
-                    print_line("=")
                     self.model_switch_count += 1
                     continue
                 else:
