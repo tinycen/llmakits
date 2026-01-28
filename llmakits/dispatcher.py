@@ -114,7 +114,7 @@ class ModelDispatcher:
             next_base_model_info = (
                 f"Next model : \n{next_idx + 1}/{models_num} Model {next_sdk_name} : {next_model_name}"
             )
-            print_line(".")
+            # print_line(".")
             self.logger.debug(next_base_model_info)
             # 标记下一个模型的信息已打印
             printed_model_indices.add(next_idx)
