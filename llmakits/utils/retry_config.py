@@ -6,6 +6,7 @@
 # 图片下载相关的错误关键词列表
 IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Download the media resource timed out",
+    "Unable to download the media",  # modelscope
     "Failed to download multimodal content",
     "Download multimodal file timed out",
 ]
@@ -40,7 +41,8 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "You exceeded your current quota",  # gemini
     "You have exceeded your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
+    "免费使用额度已用完",  # gitcode , modelscope
+    # 模型不存在
     "not_found_error",  # cerebras_openai
     "no provider supported",  # modelscope
-    "免费使用额度已用完",  # gitcode , modelscope
 ]
