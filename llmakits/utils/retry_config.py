@@ -41,5 +41,6 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "You have exceeded your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
     "not_found_error",  # cerebras_openai
+    "no provider supported",  # modelscope
     "免费使用额度已用完",  # gitcode , modelscope
 ]
