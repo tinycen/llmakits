@@ -188,9 +188,8 @@ class RetryHandler:
         返回:
             Tuple[bool, Any, bool]: (是否继续重试, 更新后的messages对象, 是否需要切换API密钥)
         """
-        # 打印当前的模型信息
-        print_line()
-        print(f"当前 云服务商: {platform}，模型: {model_name}")
+        # 当前的模型信息
+        base_model_info = f"Model {platform} : {model_name}"
         # print(e)
 
         # 获取错误信息
@@ -198,16 +197,22 @@ class RetryHandler:
 
         # 判断是否应该重试
         if self.should_retry_for_rate_limit(error_message):
+            print_line()
+            print(base_model_info)
             should_retry, updated_messages = self.handle_rate_limit_error(
                 error_message, api_retry_count, messages, message_config
             )
             return should_retry, updated_messages, False
 
         elif self.should_retry_for_image_error(error_message, message_config):
+            print_line()
+            print(base_model_info)
             should_retry, updated_messages = self.handle_image_error(messages, message_config)
             return should_retry, updated_messages, False
 
         elif any(keyword in error_message for keyword in DEFAULT_RETRY_API_KEYWORDS):
+            print_line()
+            print(base_model_info)
             print("模型每日请求超过限制 或 免费额度已用完")
             return True, messages, True  # 需要重试且需要切换API密钥
 
