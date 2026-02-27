@@ -73,7 +73,10 @@ class ModelDispatcher:
             self.logger.error(f"Exhausted models: {self.exhausted_models}")
         # 新增：输出缓存统计
         cache_stats = self.get_cache_stats()
-        print(f"Image cache: {cache_stats['cache_size']}/{cache_stats['max_size']}")
+        cache_size = cache_stats['cache_size']
+        if cache_size > 0:
+            max_size = cache_stats['max_size']
+            print(f"Image cache: {cache_size}/{max_size}")
         return
 
     # 移除Token已用尽的模型
