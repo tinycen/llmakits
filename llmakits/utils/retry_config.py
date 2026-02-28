@@ -19,6 +19,7 @@ MIN_LIMIT_ERROR_KEYWORDS = [
 DEFAULT_RETRY_KEYWORDS = [
     "Too many requests",
     "频繁操作，请稍后重试",  # gitcode
+    "模型当前访问量过大",  # zhipu
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
     "Requests rate limit exceeded, please try again later",
@@ -45,4 +46,5 @@ DEFAULT_RETRY_API_KEYWORDS = [
     # 模型不存在
     "not_found_error",  # cerebras_openai
     "no provider supported",  # modelscope
+    "您的账户已达到速率限制",  # zhipu
 ]
