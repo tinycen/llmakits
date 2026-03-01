@@ -188,7 +188,7 @@ class ModelDispatcher:
                     )
                     return_message, total_tokens = result
                     if total_seconds > self.warning_time:
-                        content = f"Time-consuming operation: execute_task took {total_seconds}s"
+                        content = f"Time-consuming: execute_task took {total_seconds}s"
                         log_content = f"{base_model_info}\n{content}"
                         self.logger.warning(log_content)
                 else:
