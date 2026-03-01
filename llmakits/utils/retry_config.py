@@ -9,6 +9,7 @@ IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Unable to download the media",  # modelscope
     "Failed to download multimodal content",
     "Download multimodal file timed out",
+    "Invalid image data",
 ]
 MIN_LIMIT_ERROR_KEYWORDS = [
     "Rate limit exceeded: free-models-per-min",  # openrouter

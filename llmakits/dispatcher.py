@@ -36,6 +36,8 @@ class ModelDispatcher:
     ):
         self.model_switch_count = 0
         self.exhausted_models = []
+        self.retry_exhausted_models = []  # 记录达到最大重试次数3次的模型
+        self._retry_fail_count: Dict[str, int] = {}  # 记录模型达到最大重试次数的错误计数
         self.warning_time = None  # 用于 显示超时警告的阈值，单位秒
         self.logger = setup_logger("dispatcher")  # 新增：日志记录器
 
@@ -69,8 +71,13 @@ class ModelDispatcher:
     def report(self):
         if self.model_switch_count > 0:
             print(f"Model switch count: {self.model_switch_count}")
+
         if self.exhausted_models:
             self.logger.error(f"Exhausted models: {self.exhausted_models}")
+
+        if self.retry_exhausted_models:
+            self.logger.error(f"Retry exhausted models: {self.retry_exhausted_models}")
+
         # 新增：输出缓存统计
         cache_stats = self.get_cache_stats()
         cache_size = cache_stats['cache_size']
@@ -79,10 +86,9 @@ class ModelDispatcher:
             print(f"Image cache: {cache_size}/{max_size}")
         return
 
-    # 移除Token已用尽的模型
-    def _remove_exhausted_model(self, sdk_name: str, model_name: str):
+    def _remove_model(self, sdk_name: str, model_name: str):
         """
-        从模型组中删除API密钥用尽的模型
+        从模型组中删除指定模型
 
         Args:
             sdk_name: 模型的SDK名称
@@ -252,12 +258,26 @@ class ModelDispatcher:
                 if idx not in printed_model_indices:
                     print(base_model_info)
 
-                # 检查是否是API密钥用尽异常
-                if str(e) == 'API_KEY_EXHAUSTED':
-                    self.logger.error(f"{sdk_name} - {model_name} API密钥 已用完")
-                    # 从模型组中删除该模型
-                    self._remove_exhausted_model(sdk_name, model_name)
-                    self.exhausted_models.append(f"{sdk_name}_{model_name}")
+                # 检查是否是API密钥用尽异常或达到最大重试次数
+                error_msg = str(e)
+                model_key = f"{sdk_name}_{model_name}"
+
+                if error_msg == 'API_KEY_EXHAUSTED':
+                    # API密钥用尽，直接删除模型
+                    self.logger.error(f"{model_key} API密钥 已用完")
+                    self._remove_model(sdk_name, model_name)
+                    self.exhausted_models.append(model_key)
+
+                elif '达到最大重试次数' in error_msg:
+                    # 达到最大重试次数，计数达到3次才删除
+                    self._retry_fail_count[model_key] = self._retry_fail_count.get(model_key, 0) + 1
+                    fail_count = self._retry_fail_count[model_key]
+                    self.logger.error(f"{model_key} (第 {fail_count} 次 触发超出重试限制)")
+
+                    if fail_count >= 3:
+                        self._remove_model(sdk_name, model_name)
+                        self.retry_exhausted_models.append(model_key)
+                        self.logger.error(f"{model_key} 已3次 触发最大重试次数，已从模型组中移除")
                 else:
                     # 打印详细的错误信息
                     self.logger.error(f"错误详情: {e}")
