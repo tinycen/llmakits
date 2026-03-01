@@ -44,8 +44,9 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "You have exceeded your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
     "免费使用额度已用完",  # gitcode , modelscope
+    "您的账户已达到速率限制",  # zhipu
     # 模型不存在
     "not_found_error",  # cerebras_openai
     "no provider supported",  # modelscope
-    "您的账户已达到速率限制",  # zhipu
+    "Invalid model id",  # gitcode
 ]
