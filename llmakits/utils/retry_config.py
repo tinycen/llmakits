@@ -20,6 +20,7 @@ MIN_LIMIT_ERROR_KEYWORDS = [
 DEFAULT_RETRY_KEYWORDS = [
     "Too many requests",
     "频繁操作，请稍后重试",  # gitcode
+    "Request rate increased too quickly",  # modelscope
     "模型当前访问量过大",  # zhipu
     "Allocated quota exceeded, please increase your quota limit",
     "Max retries exceeded with url",
@@ -49,4 +50,5 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "not_found_error",  # cerebras_openai
     "no provider supported",  # modelscope
     "Invalid model id",  # gitcode
+    "Inference Serverless API for this model not found",  # gitcode
 ]
