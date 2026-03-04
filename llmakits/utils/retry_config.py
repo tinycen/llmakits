@@ -45,6 +45,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "You have exceeded your monthly included credits",  # huggingface
     "You have depleted your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
+    "on tokens per day (TPD)",  # groq
     "免费使用额度已用完",  # gitcode , modelscope
     "您的账户已达到速率限制",  # zhipu
     # 模型不存在
