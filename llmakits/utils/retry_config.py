@@ -43,6 +43,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "API key USD spend limit exceeded",  # openrouter
     "You exceeded your current quota",  # gemini
     "You have exceeded your monthly included credits",  # huggingface
+    "You have depleted your monthly included credits",  # huggingface
     "Tokens per day limit exceeded",  # cerebras_openai
     "免费使用额度已用完",  # gitcode , modelscope
     "您的账户已达到速率限制",  # zhipu
