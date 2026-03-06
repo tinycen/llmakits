@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from typing import Optional, Union, Any, Tuple
 
@@ -123,7 +124,11 @@ class BaseClient:
                 result = response.message.content
                 total_tokens = 0
             else:
-                if response.choices:
+                # 非流式响应，直接获取 content
+                if isinstance(response, str):
+                    raise Exception(f"response 类型是字符串！response: {response}")
+
+                if hasattr(response, 'choices') and response.choices:
                     try:
                         result = response.choices[0].message.content
                     except:
@@ -131,6 +136,7 @@ class BaseClient:
                         result = response.choices[0].delta["content"]
 
                     total_tokens = response.usage.total_tokens
+
                 else:
                     # 如果没有choices，检查response是否为异常对象，如果不是则转换为异常
                     print(f"原始响应中没有choices：{response}")
