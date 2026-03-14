@@ -49,7 +49,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "免费使用额度已用完",  # gitcode , modelscope
     "您的账户已达到速率限制",  # zhipu
     # 模型不存在
-    "not_found_error",  # cerebras_openai
+    "does not exist or you do not have access to it",  # cerebras_openai
     "no provider supported",  # modelscope
     "Invalid model id",  # gitcode
     "Inference Serverless API for this model not found",  # gitcode
