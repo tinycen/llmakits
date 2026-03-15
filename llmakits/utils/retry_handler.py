@@ -3,7 +3,7 @@
 负责处理API请求的重试逻辑、错误处理和异常恢复
 """
 
-from funcguard import print_line, time_wait
+from funcguard import print_block, print_line, time_wait
 from typing import Dict, Tuple, Any
 from ..message import rebuild_messages_single_image, convert_images_to_base64
 from .retry_config import (
@@ -217,6 +217,15 @@ class RetryHandler:
             return True, messages, True  # 需要重试且需要切换API密钥
 
         else:
+            print_line()
+            if error_message:
+                title = "已提取到报错信息，但未匹配到任何重试场景:"
+                print(title)
+                print(error_message)
+            else:
+                title = "注意：未提取到报错信息！"
+                print(title)
+
             # 直接重新抛出原始异常，保持异常对象的完整性
             # print(f"其他异常错误：{e}")
             raise e
