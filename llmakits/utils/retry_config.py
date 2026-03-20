@@ -7,6 +7,8 @@
 IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Download the media resource timed out",
     "Unable to download the media",  # modelscope
+    "download image error",  # modelscope
+    "cannot identify image file",  # openrouter
     "Failed to download multimodal content",
     "Download multimodal file timed out",
     "Invalid image data",
