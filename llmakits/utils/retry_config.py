@@ -41,6 +41,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "The free tier of the model has been exhausted",  # dashscope
     "Rate limit exceeded: free-models-per-day-high-balance",  # openrouter
     "API key USD spend limit exceeded",  # openrouter
+    "not supported by any provider you have enabled",  # openrouter
     "You exceeded your current quota",  # gemini
     "You have exceeded your monthly included credits",  # huggingface
     "You have depleted your monthly included credits",  # huggingface
