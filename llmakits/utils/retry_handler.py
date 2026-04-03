@@ -218,7 +218,7 @@ class RetryHandler:
 
         else:
             print_line()
-            if error_message:
+            if error_message and 'TimeoutError' not in error_message:
                 title = "已提取到报错信息，但未匹配到任何重试场景:"
                 print(title)
                 print(error_message)
