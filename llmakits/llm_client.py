@@ -1,10 +1,10 @@
-import json
+import httpx
 import pandas as pd
 from typing import Optional, Union, Any, Tuple
 
 from ollama import chat
 from openai import OpenAI
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 
 from .utils.retry_handler import RetryHandler
 from .message import prepare_request_data
@@ -31,7 +31,7 @@ class BaseClient:
         self.top_p = 0.1
         self.stream = False  # 是否流式输出，默认为 False，可选为 True
         self.stream_real = False  # 是否真的流式输出
-        self.client: Optional[Union[OpenAI, ZhipuAI]] = None  # 由子类初始化
+        self.client: Optional[Union[OpenAI, ZhipuAiClient]] = None  # 由子类初始化
         self.extra_body = {}  # 额外的参数
 
         # 初始化重试处理器
@@ -175,7 +175,9 @@ class BaseOpenai(BaseClient):
             raise Exception("没有可用的API密钥")
         self.api_key = self.api_keys[0]
         if self.platform == "zhipu":
-            self.client = ZhipuAI(api_key=self.api_key, timeout=self.request_timeout, max_retries=self.max_retries)
+            # 新版 zai-sdk 使用 httpx 客户端配置超时
+            httpx_client = httpx.Client(timeout=self.request_timeout)
+            self.client = ZhipuAiClient(api_key=self.api_key, http_client=httpx_client)
         else:
             self.client = OpenAI(
                 api_key=self.api_key, base_url=self.base_url, timeout=self.request_timeout, max_retries=self.max_retries

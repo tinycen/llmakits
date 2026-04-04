@@ -1,8 +1,9 @@
 regex
+httpx
 pyyaml
 pandas
 openai
-zhipuai
+zai-sdk
 dashscope
 filekits
 funcguard
