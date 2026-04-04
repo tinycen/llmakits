@@ -268,16 +268,16 @@ class ModelDispatcher:
                     self._remove_model(sdk_name, model_name)
                     self.exhausted_models.append(model_key)
 
-                elif '达到最大重试次数' in error_msg:
+                elif '达到最大重试次数' in error_msg or '执行时间超过' in error_msg:
                     # 达到最大重试次数，计数达到3次才删除
                     self._retry_fail_count[model_key] = self._retry_fail_count.get(model_key, 0) + 1
                     fail_count = self._retry_fail_count[model_key]
-                    self.logger.error(f"{model_key} (第 {fail_count} 次 触发超出重试限制)")
+                    self.logger.error(f"{model_key} (第 {fail_count} 次 触发 超时/重试)")
 
                     if fail_count >= 3:
                         self._remove_model(sdk_name, model_name)
                         self.retry_exhausted_models.append(model_key)
-                        self.logger.error(f"{model_key} 已3次 触发最大重试次数，已从模型组中移除")
+                        self.logger.error(f"{model_key} 已3次 触发 超时/重试，已从模型组中移除这个模型")
                 else:
                     # 打印详细的错误信息
                     self.logger.error(f"错误详情: {e}")
