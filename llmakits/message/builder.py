@@ -5,6 +5,7 @@
 
 from typing import List, Optional, Dict, Any, Tuple
 from filekits.base_io import download_encode_base64, batch_download_encode_base64
+from .validator import validate_base64_content
 
 
 def prepare_messages(
@@ -211,6 +212,11 @@ def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]
                 # 下载并转换为base64
                 base64_str = download_encode_base64(img_url)
                 if base64_str:
+                    # 验证base64内容是否为有效图片
+                    is_valid, error_msg = validate_base64_content(base64_str, expected_type="image")
+                    if not is_valid:
+                        print(f"base64内容验证失败: {img_url}, 原因: {error_msg}")
+                        continue
                     # 存入缓存
                     if image_cache is not None:
                         image_cache.put(img_url, base64_str)
