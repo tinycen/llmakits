@@ -219,7 +219,9 @@ def dispatcher_with_repair(
             print("model failed, trying next model ...")
             _print_next_model_info(dispatcher, group_name, current_index)
             print_line("=")
-            current_index = result.last_tried_index + 1
+            next_index = result.last_tried_index + 1
+            # 防御性保护：避免 last_tried_index 异常导致回退到已尝试过的索引，进而进入无限循环
+            current_index = next_index if next_index > current_index else current_index + 1
 
         else:
             raise result.error  # type: ignore

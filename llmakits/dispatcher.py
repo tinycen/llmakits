@@ -291,13 +291,13 @@ class ModelDispatcher:
                 else:
                     # 最后一个模型也失败了
                     if return_detailed:
-                        return ExecutionResult(success=False, error=e)
+                        return ExecutionResult(success=False, error=e, last_tried_index=idx)
                     raise e
 
         # 如果所有模型都失败（理论上不会到这里）
         error = Exception("All models failed.")
         if return_detailed:
-            return ExecutionResult(success=False, error=error)
+            return ExecutionResult(success=False, error=error, last_tried_index=models_num - 1)
         raise error
 
     def execute_with_group(
