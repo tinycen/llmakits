@@ -6,3 +6,4 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+tests/test_base_client.py
