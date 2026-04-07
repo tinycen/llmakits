@@ -39,6 +39,8 @@ class BaseClient:
 
     def send_message(self, messages, message_info=None):
         """发送消息的主方法"""
+        if message_info is not None:
+            message_info = self.retry_handler.preprocess_message_info(message_info)
 
         # 准备请求数据
         messages, request_data = prepare_request_data(self.platform, messages, message_info)

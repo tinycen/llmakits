@@ -4,7 +4,8 @@
 """
 
 from funcguard import print_block, print_line, time_wait
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, List, Set
+from urllib.parse import urlparse
 from ..message import rebuild_messages_single_image, convert_images_to_base64
 from .retry_config import (
     IMAGE_DOWNLOAD_ERROR_KEYWORDS,
@@ -19,6 +20,9 @@ class RetryHandler:
 
     def __init__(self, platform: str):
         self.platform = platform
+        self.force_base64_domains: Set[str] = set()
+        self.domain_failure_stats: Dict[str, Dict[str, int]] = {}
+        self._last_failed_domain = ""
         # 获取全局图片缓存
         self.image_cache = None
         try:
@@ -30,6 +34,82 @@ class RetryHandler:
             self.image_cache = ModelDispatcher.get_image_cache()
         except ImportError:
             pass
+
+    def _extract_domain(self, img_url: str) -> str:
+        """提取图片URL中的域名。"""
+        if img_url.startswith('data:image/'):
+            return ""
+        parsed = urlparse(img_url)
+        return parsed.netloc.lower()
+
+    def _record_domain_failure(self, domain: str) -> None:
+        """记录域名失败次数并判断是否需要强制转base64。"""
+        if not domain:
+            return
+
+        if domain not in self.domain_failure_stats:
+            self.domain_failure_stats[domain] = {"consecutive": 0, "cumulative": 0}
+
+        stats = self.domain_failure_stats[domain]
+        stats["cumulative"] += 1
+
+        if domain == self._last_failed_domain:
+            stats["consecutive"] += 1
+        else:
+            stats["consecutive"] = 1
+            self._last_failed_domain = domain
+
+        if stats["consecutive"] >= 3 or stats["cumulative"] >= 5:
+            if domain not in self.force_base64_domains:
+                print(f"域名 {domain} 已触发阈值，后续将强制使用base64图片")
+            self.force_base64_domains.add(domain)
+
+    def _get_force_domains_from_img_list(self, img_list: List[str]) -> Set[str]:
+        """从图片列表中提取命中的强制base64域名。"""
+        matched_domains = set()
+        for img_url in img_list:
+            domain = self._extract_domain(img_url)
+            if domain and domain in self.force_base64_domains:
+                matched_domains.add(domain)
+        return matched_domains
+
+    def _convert_force_domains_to_base64(self, img_list: List[str]) -> List[str]:
+        """将强制域名的图片URL转换为base64格式。"""
+        matched_domains = self._get_force_domains_from_img_list(img_list)
+        if not matched_domains:
+            return img_list
+
+        convert_candidates = [
+            img_url
+            for img_url in img_list
+            if (self._extract_domain(img_url) in matched_domains) and not img_url.startswith('data:image/')
+        ]
+
+        if not convert_candidates:
+            return img_list
+
+        converted_candidates = convert_images_to_base64(convert_candidates, self.image_cache)
+        converted_iter = iter(converted_candidates)
+        processed_img_list = []
+
+        for img_url in img_list:
+            domain = self._extract_domain(img_url)
+            if domain in matched_domains and not img_url.startswith('data:image/'):
+                processed_img_list.append(next(converted_iter))
+            else:
+                processed_img_list.append(img_url)
+
+        return processed_img_list
+
+    def preprocess_message_info(self, message_info: Dict) -> Dict:
+        """请求发送前预处理图片：命中域名策略则提前转base64。"""
+        if not message_info:
+            return message_info
+        if not message_info.get("include_img") or not message_info.get("img_list"):
+            return message_info
+
+        message_info["img_list"] = self._convert_force_domains_to_base64(message_info["img_list"])
+        return message_info
 
     def _build_error_message(self, error_data: Dict, original_exception: Exception) -> str:
         """构建错误消息字符串
@@ -122,6 +202,14 @@ class RetryHandler:
 
             img_list = message_config["img_list"]
             print(f"img_list: {img_list}")
+
+            for img_url in img_list:
+                domain = self._extract_domain(img_url)
+                if domain:
+                    self._record_domain_failure(domain)
+
+            # 命中域名策略：优先将该域名图片转为base64后重试
+            img_list = self._convert_force_domains_to_base64(img_list)
 
             # 第3次尝试时，检测图片格式并进行base64转换
             if api_retry_count == 1 and img_list:
