@@ -8,6 +8,7 @@ from filekits.base_io import save_json
 from .message import convert_to_json
 from .load_model import load_models
 from .utils.image_cache import ImageBase64Cache
+from .utils.retry_state import get_retry_state, get_retry_state_snapshot
 
 
 class ExecutionResult(NamedTuple):
@@ -27,12 +28,6 @@ class ModelDispatcher:
 
     # 类级别的全局缓存，所有实例共享
     _global_image_cache = ImageBase64Cache(max_size=10)
-    _global_retry_state = {
-        "force_base64_domains": set(),
-        "domain_failure_stats": {},
-        "last_failed_domain": "",
-    }
-
     def __init__(
         self,
         models_config: Optional[Union[str, Dict[str, Any]]] = None,
@@ -75,18 +70,12 @@ class ModelDispatcher:
     @classmethod
     def get_retry_state(cls) -> Dict[str, Any]:
         """获取重试域名策略共享状态。"""
-        return cls._global_retry_state
+        return get_retry_state()
 
     @classmethod
     def get_retry_state_snapshot(cls) -> Dict[str, Any]:
         """获取重试域名策略状态快照（用于报告展示）。"""
-        retry_state = cls._global_retry_state
-        domain_stats = retry_state["domain_failure_stats"]
-        return {
-            "force_base64_domains": sorted(list(retry_state["force_base64_domains"])),
-            "domain_failure_stats": {domain: stats.copy() for domain, stats in domain_stats.items()},
-            "last_failed_domain": retry_state["last_failed_domain"],
-        }
+        return get_retry_state_snapshot()
 
     # 输出报告
     def report(self):

@@ -7,6 +7,7 @@ from funcguard import print_block, print_line, time_wait
 from typing import Dict, Tuple, Any, List, Set
 from urllib.parse import urlparse
 from ..message import rebuild_messages_single_image, convert_images_to_base64
+from .retry_state import get_retry_state
 from .retry_config import (
     IMAGE_DOWNLOAD_ERROR_KEYWORDS,
     DEFAULT_RETRY_KEYWORDS,
@@ -17,15 +18,9 @@ from .retry_config import (
 
 class RetryHandler:
     """处理API请求重试逻辑的组件"""
-    _fallback_retry_state = {
-        "force_base64_domains": set(),
-        "domain_failure_stats": {},
-        "last_failed_domain": "",
-    }
-
     def __init__(self, platform: str):
         self.platform = platform
-        self._retry_state = self._fallback_retry_state
+        self._retry_state = get_retry_state()
         self.force_base64_domains: Set[str] = self._retry_state["force_base64_domains"]
         self.domain_failure_stats: Dict[str, Dict[str, int]] = self._retry_state["domain_failure_stats"]
         self._last_failed_domain = self._retry_state["last_failed_domain"]
@@ -38,12 +33,7 @@ class RetryHandler:
             from ..dispatcher import ModelDispatcher
 
             self.image_cache = ModelDispatcher.get_image_cache()
-            retry_state = ModelDispatcher.get_retry_state()
-            if isinstance(retry_state, dict):
-                self._retry_state = retry_state
-                self.force_base64_domains = self._retry_state["force_base64_domains"]
-                self.domain_failure_stats = self._retry_state["domain_failure_stats"]
-                self._last_failed_domain = self._retry_state["last_failed_domain"]
+            # 重试状态直接来自 utils.retry_state，避免和 dispatcher 双份定义
         except ImportError:
             pass
 
