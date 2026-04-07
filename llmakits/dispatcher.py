@@ -27,6 +27,11 @@ class ModelDispatcher:
 
     # 类级别的全局缓存，所有实例共享
     _global_image_cache = ImageBase64Cache(max_size=10)
+    _global_retry_state = {
+        "force_base64_domains": set(),
+        "domain_failure_stats": {},
+        "last_failed_domain": "",
+    }
 
     def __init__(
         self,
@@ -67,6 +72,22 @@ class ModelDispatcher:
             "max_size": cls._global_image_cache.max_size,
         }
 
+    @classmethod
+    def get_retry_state(cls) -> Dict[str, Any]:
+        """获取重试域名策略共享状态。"""
+        return cls._global_retry_state
+
+    @classmethod
+    def get_retry_state_snapshot(cls) -> Dict[str, Any]:
+        """获取重试域名策略状态快照（用于报告展示）。"""
+        retry_state = cls._global_retry_state
+        domain_stats = retry_state["domain_failure_stats"]
+        return {
+            "force_base64_domains": sorted(list(retry_state["force_base64_domains"])),
+            "domain_failure_stats": {domain: stats.copy() for domain, stats in domain_stats.items()},
+            "last_failed_domain": retry_state["last_failed_domain"],
+        }
+
     # 输出报告
     def report(self):
         if self.model_switch_count > 0:
@@ -84,6 +105,11 @@ class ModelDispatcher:
         if cache_size > 0:
             max_size = cache_stats['max_size']
             print(f"Image cache: {cache_size}/{max_size}")
+
+        retry_snapshot = self.get_retry_state_snapshot()
+        force_domains = retry_snapshot["force_base64_domains"]
+        if force_domains:
+            print(f"Force base64 domains ({len(force_domains)}): {force_domains}")
         return
 
     def _remove_model(self, sdk_name: str, model_name: str):

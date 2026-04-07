@@ -23,6 +23,7 @@ class RetryHandler:
         self.force_base64_domains: Set[str] = set()
         self.domain_failure_stats: Dict[str, Dict[str, int]] = {}
         self._last_failed_domain = ""
+        self._retry_state = None
         # 获取全局图片缓存
         self.image_cache = None
         try:
@@ -32,6 +33,10 @@ class RetryHandler:
             from ..dispatcher import ModelDispatcher
 
             self.image_cache = ModelDispatcher.get_image_cache()
+            self._retry_state = ModelDispatcher.get_retry_state()
+            self.force_base64_domains = self._retry_state["force_base64_domains"]
+            self.domain_failure_stats = self._retry_state["domain_failure_stats"]
+            self._last_failed_domain = self._retry_state["last_failed_domain"]
         except ImportError:
             pass
 
@@ -58,6 +63,8 @@ class RetryHandler:
         else:
             stats["consecutive"] = 1
             self._last_failed_domain = domain
+            if self._retry_state is not None:
+                self._retry_state["last_failed_domain"] = domain
 
         if stats["consecutive"] >= 3 or stats["cumulative"] >= 5:
             if domain not in self.force_base64_domains:
