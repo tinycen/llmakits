@@ -41,8 +41,35 @@ IMAGE_SIGNATURES = [
     BASE64_SIGNATURES["heic"],
 ]
 
+# base64 前缀 -> MIME 类型映射。
+# 主要用于把下载后的纯 base64 字符串重新包装成 data URL。
+IMAGE_MIME_TYPES = {
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "gif": "image/gif",
+    "webp": "image/webp",
+    "bmp": "image/bmp",
+    "svg": "image/svg+xml",
+    "avif": "image/avif",
+    "heic": "image/heic",
+}
+
+
+def detect_base64_image_mime_type(base64_str: str) -> str:
+    """根据base64前缀识别图片MIME类型。"""
+
+    if not base64_str:
+        return ""
+
+    for image_type, mime_type in IMAGE_MIME_TYPES.items():
+        if base64_str.startswith(BASE64_SIGNATURES[image_type].signature):
+            return mime_type
+
+    return ""
+
 
 def validate_base64_content(base64_str: str, expected_type: str = "image") -> tuple[bool, str]:
+
     """
     验证base64字符串的内容类型
 

@@ -39,10 +39,18 @@ class RetryHandler:
 
     def _extract_domain(self, img_url: str) -> str:
         """提取图片URL中的域名。"""
-        if img_url.startswith('data:image/'):
+        if not isinstance(img_url, str) or not img_url or img_url.startswith('data:image/'):
             return ""
+
         parsed = urlparse(img_url)
-        return parsed.netloc.lower()
+        # 优先使用 hostname，避免 `example.com:443` 这类地址因为端口不同而无法命中同一域名策略。
+        if parsed.hostname:
+
+            return parsed.hostname.lower()
+        if parsed.netloc:
+            return parsed.netloc.split(':', 1)[0].lower()
+        return ""
+
 
     def _record_domain_failure(self, domain: str) -> None:
         """记录域名失败次数并判断是否需要强制转base64。"""
@@ -94,7 +102,28 @@ class RetryHandler:
         if not convert_candidates:
             return img_list
 
-        converted_candidates = convert_images_to_base64(convert_candidates, self.image_cache)
+        # 打印命中的强制域名，便于排查“域名已进集合但请求仍发URL”的问题。
+        print(f"命中 force-base64 域名: {sorted(matched_domains)}")
+
+        try:
+            # 这里不能要求全量成功：某张图失败时，仍要把失败事实暴露到日志里，
+            # 同时保持返回列表与原列表按位置对应，交给后续逻辑决定是否继续重试。
+            converted_candidates = convert_images_to_base64(
+                convert_candidates, self.image_cache, raise_on_all_failed=False
+            )
+
+        except Exception as e:
+            print(f"[WARN] force-base64 批量转换异常，仍使用原始URL: {e}")
+            return img_list
+
+        if len(converted_candidates) != len(convert_candidates):
+            print("[WARN] force-base64 转换结果数量异常，已回退到原始URL列表")
+            return img_list
+
+        for orig, converted in zip(convert_candidates, converted_candidates):
+            if not isinstance(converted, str) or not converted.startswith('data:image/'):
+                print(f"[WARN] force-base64 转换失败，仍使用原始URL: {orig}")
+
         converted_iter = iter(converted_candidates)
         processed_img_list = []
 
@@ -106,6 +135,18 @@ class RetryHandler:
                 processed_img_list.append(img_url)
 
         return processed_img_list
+
+    def _select_single_retry_img_list(self, img_list: List[str]) -> List[str]:
+        """重试时只保留一张图，优先保留已转成base64的图片。"""
+        if not img_list:
+            return img_list
+
+        selected_img = next(
+            (img for img in img_list if isinstance(img, str) and img.startswith('data:image/') and ';base64,' in img),
+            img_list[0],
+        )
+        return [selected_img]
+
 
     def preprocess_message_info(self, message_info: Dict) -> Dict:
         """请求发送前预处理图片：命中域名策略则提前转base64。"""
@@ -214,15 +255,21 @@ class RetryHandler:
                 if domain:
                     self._record_domain_failure(domain)
 
-            # 命中域名策略：优先将该域名图片转为base64后重试
+            # 命中域名策略：优先将该域名图片转为base64后重试。
             img_list = self._convert_force_domains_to_base64(img_list)
+            # 这里必须同步回写 message_config，避免后续同一轮 retry 又拿到旧的 URL 列表。
+            message_config["img_list"] = img_list
 
-            # 第3次尝试时，检测图片格式并进行base64转换
+            # 第2次重试前，再做一次整批base64尝试。
             if api_retry_count == 1 and img_list:
-                # print(f"尝试将图片转换为base64格式...")
-                img_list = convert_images_to_base64(img_list, self.image_cache)
-                # 更新message_config，确保转换后的base64图片在后续重试中继续使用
-                # message_config["img_list"] = img_list
+                img_list = convert_images_to_base64(img_list, self.image_cache, raise_on_all_failed=False)
+                # 再次回写，确保后续 retry / image_error 分支读取到的是最新状态。
+                message_config["img_list"] = img_list
+
+            # 多图重试时只保留一张，优先保留已经转成 base64 的图片。
+            img_list = self._select_single_retry_img_list(img_list)
+            message_config["img_list"] = img_list
+
 
             messages = rebuild_messages_single_image(
                 self.platform,
@@ -231,6 +278,7 @@ class RetryHandler:
                 reject_single_image=False,
                 img_list=img_list,
             )
+
         else:
             if any(keyword in error_message for keyword in MIN_LIMIT_ERROR_KEYWORDS):
                 time_wait(60 * (api_retry_count + 1))  # 等待一段时间后重试
@@ -252,17 +300,19 @@ class RetryHandler:
 
         print("输入图片数量超过限制 或 图片输入格式/解析错误，正在（ 限制图片数量 = 1 ）然后重试...")
 
-        # 只使用第一张图片，并更新message_config
-        # if message_config["img_list"]:
-        #     message_config["img_list"] = [message_config["img_list"][0]]
+        # 图片数量超限时，也沿用相同的单图选择策略，避免把已经转好的 base64 图丢掉。
+        img_list = self._select_single_retry_img_list(message_config["img_list"])
+        message_config["img_list"] = img_list
+
 
         messages = rebuild_messages_single_image(
             self.platform,
             message_config["system_prompt"],
             message_config["user_text"],
             reject_single_image=True,
-            img_list=message_config["img_list"],
+            img_list=img_list,
         )
+
 
         return True, messages
 
