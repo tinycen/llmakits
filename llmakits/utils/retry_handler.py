@@ -17,13 +17,18 @@ from .retry_config import (
 
 class RetryHandler:
     """处理API请求重试逻辑的组件"""
+    _fallback_retry_state = {
+        "force_base64_domains": set(),
+        "domain_failure_stats": {},
+        "last_failed_domain": "",
+    }
 
     def __init__(self, platform: str):
         self.platform = platform
-        self.force_base64_domains: Set[str] = set()
-        self.domain_failure_stats: Dict[str, Dict[str, int]] = {}
-        self._last_failed_domain = ""
-        self._retry_state = None
+        self._retry_state = self._fallback_retry_state
+        self.force_base64_domains: Set[str] = self._retry_state["force_base64_domains"]
+        self.domain_failure_stats: Dict[str, Dict[str, int]] = self._retry_state["domain_failure_stats"]
+        self._last_failed_domain = self._retry_state["last_failed_domain"]
         # 获取全局图片缓存
         self.image_cache = None
         try:
@@ -33,10 +38,12 @@ class RetryHandler:
             from ..dispatcher import ModelDispatcher
 
             self.image_cache = ModelDispatcher.get_image_cache()
-            self._retry_state = ModelDispatcher.get_retry_state()
-            self.force_base64_domains = self._retry_state["force_base64_domains"]
-            self.domain_failure_stats = self._retry_state["domain_failure_stats"]
-            self._last_failed_domain = self._retry_state["last_failed_domain"]
+            retry_state = ModelDispatcher.get_retry_state()
+            if isinstance(retry_state, dict):
+                self._retry_state = retry_state
+                self.force_base64_domains = self._retry_state["force_base64_domains"]
+                self.domain_failure_stats = self._retry_state["domain_failure_stats"]
+                self._last_failed_domain = self._retry_state["last_failed_domain"]
         except ImportError:
             pass
 
@@ -58,13 +65,15 @@ class RetryHandler:
         stats = self.domain_failure_stats[domain]
         stats["cumulative"] += 1
 
-        if domain == self._last_failed_domain:
+        last_failed_domain = self._retry_state["last_failed_domain"]
+        self._last_failed_domain = last_failed_domain
+
+        if domain == last_failed_domain:
             stats["consecutive"] += 1
         else:
             stats["consecutive"] = 1
             self._last_failed_domain = domain
-            if self._retry_state is not None:
-                self._retry_state["last_failed_domain"] = domain
+            self._retry_state["last_failed_domain"] = domain
 
         if stats["consecutive"] >= 3 or stats["cumulative"] >= 5:
             if domain not in self.force_base64_domains:
