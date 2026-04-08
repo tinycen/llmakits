@@ -9,6 +9,7 @@ from .message import convert_to_json
 from .load_model import load_models
 from .utils.image_cache import ImageBase64Cache
 from .utils.retry_state import get_retry_state, get_retry_state_snapshot
+from .utils.retry_handler import SingleImageBase64ConversionError
 
 
 class ExecutionResult(NamedTuple):
@@ -268,6 +269,10 @@ class ModelDispatcher:
                 return return_message, total_tokens
 
             except Exception as e:
+                if isinstance(e, SingleImageBase64ConversionError):
+                    # 单图下载/转base64失败时，立即抛出，由调用方决定是否中断业务。
+                    raise e
+
                 print_line("=")
                 # 只有当当前模型信息未被打印过时才打印
                 if idx not in printed_model_indices:
