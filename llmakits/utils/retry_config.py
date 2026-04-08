@@ -6,6 +6,7 @@
 # 图片下载相关的错误关键词列表
 IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "Download the media resource timed out",
+    "context deadline exceeded",  # modelscope
     "Unable to download the media",  # modelscope
     "download image error",  # modelscope
     "cannot identify image file",  # openrouter
