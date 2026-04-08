@@ -200,6 +200,7 @@ class RetryHandler:
         """提取错误信息"""
         error_message = str(e)
         response = getattr(e, 'response', None)
+        has_missing_choices_marker = "原始响应中没有choices" in error_message
 
         # 如果异常对象本身就是response（来自handle_response的直接抛出）
         if hasattr(e, 'model_dump'):
@@ -221,6 +222,10 @@ class RetryHandler:
 
             except (AttributeError, ValueError):
                 error_message = str(e)
+
+        # 既保留“原始响应中没有choices”标记，又尽量保留结构化提取的有用信息。
+        if has_missing_choices_marker and "原始响应中没有choices" not in error_message:
+            error_message = f"原始响应中没有choices | {error_message}"
 
         return error_message
 

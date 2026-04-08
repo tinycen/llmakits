@@ -22,6 +22,14 @@ def process_stream_response(response):
     return result
 
 
+class MissingChoicesResponseError(Exception):
+    """当响应对象缺失 choices 字段时抛出，保留原始响应供后续分析。"""
+
+    def __init__(self, response: Any):
+        self.response = response
+        super().__init__(f"原始响应中没有choices：{response}")
+
+
 class BaseClient:
     def __init__(self, platform: str, model_name: str):
         # 初始化模型参数
@@ -140,12 +148,13 @@ class BaseClient:
                     total_tokens = response.usage.total_tokens
 
                 else:
-                    # 如果没有choices，检查response是否为异常对象，如果不是则转换为异常
+                    # 保留原有日志，便于问题排查
                     print(f"原始响应中没有choices：{response}")
+                    # 保持原有语义：如果本身是异常对象，则直接抛出原异常
                     if isinstance(response, BaseException):
                         raise response
-                    else:
-                        raise Exception(response)
+                    # 否则使用带 response 属性的结构化异常
+                    raise MissingChoicesResponseError(response)
 
         return result, total_tokens
 
