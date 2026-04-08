@@ -14,6 +14,7 @@ JSON 错误 → 继续下一个模型
 
 from typing import Dict, Any
 from .dispatcher import ModelDispatcher
+from .utils.retry_handler import SingleImageBase64ConversionError
 from typing import Dict, Any, Optional, Callable
 from funcguard import print_line, print_block
 
@@ -140,6 +141,10 @@ def dispatcher_with_repair(
         # 成功！
         if result.success:
             return result.return_message, result.total_tokens
+
+        if isinstance(result.error, SingleImageBase64ConversionError):
+            # 单图下载/转base64失败属于不可恢复错误，直接抛给调用方处理。
+            raise result.error
 
         error_message = str(result.error)
         # 失败处理，尝试修复（仅限 JSON 错误且有原始消息）

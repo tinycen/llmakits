@@ -16,6 +16,10 @@ from .retry_config import (
 )
 
 
+class SingleImageBase64ConversionError(Exception):
+    """单图场景下图片下载/转base64失败时抛出的异常。"""
+
+
 class RetryHandler:
     """处理API请求重试逻辑的组件"""
     def __init__(self, platform: str):
@@ -269,6 +273,42 @@ class RetryHandler:
             # 多图重试时只保留一张，优先保留已经转成 base64 的图片。
             img_list = self._select_single_retry_img_list(img_list)
             message_config["img_list"] = img_list
+
+            # 关键兜底：
+            # 单图场景下，必须先显式尝试一次“单图转 base64”；
+            # 仅当该转换过程失败时，才抛出 SingleImageBase64ConversionError。
+            if len(img_list) == 1:
+                single_img = img_list[0]
+                is_base64_image = (
+                    isinstance(single_img, str)
+                    and single_img.startswith("data:image/")
+                    and ";base64," in single_img
+                )
+                if not is_base64_image:
+                    try:
+                        converted_single_list = convert_images_to_base64(
+                            [single_img], self.image_cache, raise_on_all_failed=True
+                        )
+                    except Exception as conversion_error:
+                        raise SingleImageBase64ConversionError(
+                            f"单图重试失败：图片下载/转换base64失败，url: {single_img}"
+                        ) from conversion_error
+
+                    # 防御性检查：正常情况下 raise_on_all_failed=True 时不会走到这里仍非 base64，
+                    # 但仍保留该分支保证行为明确。
+                    converted_single = converted_single_list[0]
+                    converted_is_base64 = (
+                        isinstance(converted_single, str)
+                        and converted_single.startswith("data:image/")
+                        and ";base64," in converted_single
+                    )
+                    if not converted_is_base64:
+                        raise SingleImageBase64ConversionError(
+                            f"单图重试失败：图片下载/转换base64失败，url: {single_img}"
+                        )
+
+                    img_list = converted_single_list
+                    message_config["img_list"] = img_list
 
 
             messages = rebuild_messages_single_image(
