@@ -54,18 +54,11 @@ class BaseClient:
         api_retry_count = 0
 
         while api_retry_count < max_retries:
+
             try:
                 # 创建聊天完成请求
                 response = timeout_handler(self._create_chat_completion, args=(messages,), execution_timeout=180)
-            except Exception as e:
-                if "TimeoutError" in str(e):
-                    error_tag = "响应超时"
-                else:
-                    error_tag = "响应异常"
-                response_error = ResponseError(self.platform, self.model_name, exception=e, error_tag=error_tag)
-                response_error.skip_report = True
-                raise response_error
-            try:
+
                 # 处理响应
                 result, total_tokens = self._handle_response(response, self.stream, self.stream_real)
                 return result, total_tokens
@@ -73,7 +66,11 @@ class BaseClient:
             except Exception as e:
 
                 if not isinstance(e, ResponseError):
-                    response_error = ResponseError(self.platform, self.model_name, exception=e, error_tag="")
+                    if "TimeoutError" in str(e):
+                        error_tag = "响应超时"
+                    else:
+                        error_tag = "响应异常"
+                    response_error = ResponseError(self.platform, self.model_name, exception=e, error_tag=error_tag)
                 else:
                     response_error = e
 
