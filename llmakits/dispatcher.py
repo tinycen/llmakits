@@ -9,7 +9,7 @@ from .message import convert_to_json
 from .load_model import load_models
 from .utils.image_cache import ImageBase64Cache
 from .utils.retry_state import get_retry_state, get_retry_state_snapshot
-from .utils.retry_handler import SingleImageBase64ConversionError
+from .utils.normalize_error import ResponseError
 
 
 class ExecutionResult(NamedTuple):
@@ -269,17 +269,18 @@ class ModelDispatcher:
                 return return_message, total_tokens
 
             except Exception as e:
-                if isinstance(e, SingleImageBase64ConversionError):
-                    # 单图下载/转base64失败时，立即抛出，由调用方决定是否中断业务。
-                    raise e
+                if not isinstance( e, ResponseError ) :
+                    response_error = ResponseError( sdk_name, model_name, exception = e, error_tag = "" )
+                else :
+                    response_error = e
 
                 print_line("=")
                 # 只有当当前模型信息未被打印过时才打印
-                if idx not in printed_model_indices:
+                if idx not in printed_model_indices and response_error.reported == False :
                     print(base_model_info)
 
                 # 检查是否是API密钥用尽异常或达到最大重试次数
-                error_msg = str(e)
+                error_msg = response_error.error_message
                 model_key = f"{sdk_name}_{model_name}"
 
                 if error_msg == 'API_KEY_EXHAUSTED':
@@ -300,7 +301,10 @@ class ModelDispatcher:
                         self.logger.error(f"{model_key} 已3次 触发 超时/重试，已从模型组中移除这个模型")
                 else:
                     # 打印详细的错误信息
-                    self.logger.error(f"错误详情: {e}")
+                    self.logger.error(f"错误详情: {response_error.error_tag}\n{error_msg}")
+
+                response_error.reported = True
+
                 print_line("=")
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
@@ -312,7 +316,7 @@ class ModelDispatcher:
                     # 最后一个模型也失败了
                     if return_detailed:
                         return ExecutionResult(success=False, error=e, last_tried_index=idx)
-                    raise e
+                    raise response_error
 
         # 如果所有模型都失败（理论上不会到这里）
         error = Exception("All models failed.")

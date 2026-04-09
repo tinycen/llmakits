@@ -133,11 +133,7 @@ def _build_content_by_provider(
     else:
         if provider_name in ["openrouter", "gemini", "vercel", "github"]:
             # openrouter 需要base64格式的图片
-            try:
-                img_list = convert_images_to_base64(img_list, image_cache)  # 传递缓存
-            except Exception as e:
-                print(f"图片列表转base64失败: {e}")
-                raise Exception(f"图片列表转base64失败，img_list：{img_list}")
+            img_list = convert_images_to_base64(img_list, image_cache)  # 传递缓存
 
         user_content = [{"type": "image_url", "image_url": {"url": img}} for img in img_list]
         if provider_name in ["gitcode"]:
@@ -185,16 +181,13 @@ def _build_base64_image_url(base64_str: str, img_url: str = "") -> str:
     return f"data:{mime_type};base64,{base64_str}"
 
 
-def convert_images_to_base64(
-    img_list: List[str], image_cache=None, raise_on_all_failed: bool = True
-) -> List[str]:
+def convert_images_to_base64(img_list: List[str], image_cache=None) -> List[str]:
     """
     将图片列表转换为base64格式，并保持输出列表与输入列表一一对应。
 
     Args:
         img_list: 图片URL或base64列表
         image_cache: 可选的图片base64缓存对象
-        raise_on_all_failed: 当所有待转换图片都失败时，是否抛异常
 
     Returns:
         与输入顺序一致的图片列表。
@@ -222,12 +215,11 @@ def convert_images_to_base64(
 
     processed_img_list = []
     successful_conversions = 0
-    attempted_conversions = 0
 
     for img_url in img_list:
         # 始终保持输出列表与输入列表等长，避免上层按位置回填时发生错位。
         if not isinstance(img_url, str):
-            processed_img_list.append(img_url)
+            # processed_img_list.append(img_url)
             continue
 
         if img_url.startswith('data:image/') and ';base64,' in img_url:
@@ -238,8 +230,6 @@ def convert_images_to_base64(
         if not normalized_img_url:
             processed_img_list.append(img_url)
             continue
-
-        attempted_conversions += 1
 
         cached_base64 = None
         if image_cache is not None:
@@ -258,29 +248,30 @@ def convert_images_to_base64(
             # 不依赖URL后缀，直接按URL下载并探测真实内容类型。
             base64_str = download_encode_base64(normalized_img_url)
             if not base64_str:
-                print(f"转换后, base64_str 无效，仍使用原始URL: {normalized_img_url}")
-                processed_img_list.append(img_url)
+                print(f"转换后, base64_str 为空，已跳过: {normalized_img_url}")
+                # processed_img_list.append(img_url)
                 continue
 
             is_valid, error_msg = validate_base64_content(base64_str, expected_type="image")
             if not is_valid:
-                print(f"base64内容验证失败: {normalized_img_url}, 原因: {error_msg}")
-                processed_img_list.append(img_url)
+                print(f"转换后，base64 验证失败，已跳过: {normalized_img_url}, 原因: {error_msg}")
+                # processed_img_list.append(img_url)
                 continue
 
             if image_cache is not None:
                 image_cache.put(normalized_img_url, base64_str)
 
             processed_img_list.append(_build_base64_image_url(base64_str, normalized_img_url))
+
             successful_conversions += 1
             print(f"已将图片转换为base64格式: {normalized_img_url}")
 
         except Exception as e:
-            print(f"图片转base64失败: {normalized_img_url}\n{e}")
-            processed_img_list.append(img_url)
+            print(f"图片下载转base64失败: {normalized_img_url}\n{e}")
+            # processed_img_list.append(img_url)
 
-    if attempted_conversions > 0 and successful_conversions == 0 and raise_on_all_failed:
-        raise Exception(f"图片下载或转换base64失败，url：{img_list}")
+    if successful_conversions == 0 :
+        raise Exception(f"所有图片 下载/转换base64 均失败，url：{img_list}")
 
     return processed_img_list
 
