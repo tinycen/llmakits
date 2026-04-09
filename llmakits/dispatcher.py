@@ -29,6 +29,7 @@ class ModelDispatcher:
 
     # 类级别的全局缓存，所有实例共享
     _global_image_cache = ImageBase64Cache(max_size=10)
+
     def __init__(
         self,
         models_config: Optional[Union[str, Dict[str, Any]]] = None,
@@ -174,8 +175,8 @@ class ModelDispatcher:
         # 验证起始索引
         if start_index < 0 or start_index >= models_num:
             error_tag = "model索引超出范围"
-            exception = ValueError( f"起始索引 {start_index} 超出范围 [0, {models_num - 1}]" )
-            response_error = ResponseError( "", "", exception = exception, error_tag = error_tag )
+            exception = ValueError(f"起始索引 {start_index} 超出范围 [0, {models_num - 1}]")
+            response_error = ResponseError("", "", exception=exception, error_tag=error_tag)
 
             if return_detailed:
                 return ExecutionResult(success=False, error=response_error)
@@ -218,7 +219,7 @@ class ModelDispatcher:
                     try:
                         return_message = convert_to_json(return_message)
                     except Exception as json_error:
-                        response_error = ResponseError( sdk_name, model_name, exception = json_error, error_tag = "" )
+                        response_error = ResponseError(sdk_name, model_name, exception=json_error, error_tag="")
 
                         if return_detailed:
                             # 返回详细结果，包含原始消息和错误信息
@@ -275,18 +276,18 @@ class ModelDispatcher:
                 return return_message, total_tokens
 
             except Exception as e:
-                if not isinstance( e, ResponseError ) :
-                    response_error = ResponseError( sdk_name, model_name, exception = e, error_tag = "" )
-                else :
+                if not isinstance(e, ResponseError):
+                    response_error = ResponseError(sdk_name, model_name, exception=e, error_tag="")
+                else:
                     response_error = e
 
-                print_line("=")
                 # 只有当当前模型信息未被打印过时才打印
-                if idx not in printed_model_indices and response_error.reported == False :
+                if idx not in printed_model_indices and response_error.reported == False:
+                    print_line("=")
                     print(base_model_info)
 
                 error_message = response_error.get_error_message()
-                if "图片" in response_error.error_tag or "图片" in error_message :
+                if "图片" in response_error.error_tag or "图片" in error_message:
                     raise response_error
 
                 # 检查是否是API密钥用尽异常或达到最大重试次数
@@ -299,7 +300,7 @@ class ModelDispatcher:
                     self._remove_model(sdk_name, model_name)
                     self.exhausted_models.append(model_key)
 
-                elif '达到最大重试次数' in error_msg or '执行时间超过' in error_msg:
+                elif 'API_RETRY_REACHED' in error_msg or '执行时间超过' in error_msg:
                     # 达到最大重试次数，计数达到3次才删除
                     self._retry_fail_count[model_key] = self._retry_fail_count.get(model_key, 0) + 1
                     fail_count = self._retry_fail_count[model_key]
@@ -311,11 +312,13 @@ class ModelDispatcher:
                         self.logger.error(f"{model_key} 已3次 触发 超时/重试，已从模型组中移除这个模型")
                 else:
                     # 打印详细的错误信息
-                    self.logger.error(f"错误详情: {response_error.error_tag}\n{error_msg}")
+                    if response_error.reported == False:
+                        self.logger.error(f"错误详情: {response_error.error_tag}\n{error_msg}")
 
-                response_error.reported = True
+                if response_error.reported == False:
+                    print_line("=")
+                    response_error.reported = True
 
-                print_line("=")
                 if idx < models_num - 1:
                     print("model failed, trying next model ...")
                     # 打印下一个模型的信息

@@ -100,7 +100,7 @@ class BaseClient:
                 raise response_error
 
         error_tag = "api_retry达到最大重试次数"
-        exception = Exception(f"API_RETRY REACHED, MAXIMUM RETRIES: {max_retries}")
+        exception = Exception(f"API_RETRY_REACHED, MAXIMUM_RETRIES: {max_retries}")
         response_error = ResponseError(self.platform, self.model_name, exception=exception, error_tag=error_tag)
         response_error.skip_report = True
         raise response_error
