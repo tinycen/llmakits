@@ -22,6 +22,7 @@ class SingleImageBase64ConversionError(Exception):
 
 class RetryHandler:
     """处理API请求重试逻辑的组件"""
+
     def __init__(self, platform: str):
         self.platform = platform
         self._retry_state = get_retry_state()
@@ -54,7 +55,6 @@ class RetryHandler:
         if parsed.netloc:
             return parsed.netloc.split(':', 1)[0].lower()
         return ""
-
 
     def _record_domain_failure(self, domain: str) -> None:
         """记录域名失败次数并判断是否需要强制转base64。"""
@@ -107,7 +107,7 @@ class RetryHandler:
             return img_list
 
         # 打印命中的强制域名，便于排查“域名已进集合但请求仍发URL”的问题。
-        print(f"命中 force-base64 域名: {sorted(matched_domains)}")
+        # print(f"命中 force-base64 域名: {sorted(matched_domains)}")
 
         try:
             # 这里不能要求全量成功：某张图失败时，仍要把失败事实暴露到日志里，
@@ -150,7 +150,6 @@ class RetryHandler:
             img_list[0],
         )
         return [selected_img]
-
 
     def preprocess_message_info(self, message_info: Dict) -> Dict:
         """请求发送前预处理图片：命中域名策略则提前转base64。"""
@@ -285,9 +284,7 @@ class RetryHandler:
             if len(img_list) == 1:
                 single_img = img_list[0]
                 is_base64_image = (
-                    isinstance(single_img, str)
-                    and single_img.startswith("data:image/")
-                    and ";base64," in single_img
+                    isinstance(single_img, str) and single_img.startswith("data:image/") and ";base64," in single_img
                 )
                 if not is_base64_image:
                     try:
@@ -314,7 +311,6 @@ class RetryHandler:
 
                     img_list = converted_single_list
                     message_config["img_list"] = img_list
-
 
             messages = rebuild_messages_single_image(
                 self.platform,
@@ -349,7 +345,6 @@ class RetryHandler:
         img_list = self._select_single_retry_img_list(message_config["img_list"])
         message_config["img_list"] = img_list
 
-
         messages = rebuild_messages_single_image(
             self.platform,
             message_config["system_prompt"],
@@ -357,7 +352,6 @@ class RetryHandler:
             reject_single_image=True,
             img_list=img_list,
         )
-
 
         return True, messages
 
