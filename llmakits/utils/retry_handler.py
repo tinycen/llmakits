@@ -114,16 +114,6 @@ class RetryHandler :
 
         converted_candidates = convert_images_to_base64( convert_candidates, self.image_cache )
 
-        for orig, converted in zip( convert_candidates, converted_candidates ) :
-            if not isinstance( converted, str ) or not converted.startswith( 'data:image/' ) :
-                error_tag = "图片下载转换base64失败"
-                print( f"图片下载转换base64失败: {img_list}" )
-                exception = Exception( f"图片下载转换base64失败: {img_list}" )
-                if len( img_list ) == 1 :
-                    response_error = ResponseError( self.platform, self.model_name, exception = exception,
-                                                    error_tag = error_tag )
-                    raise response_error
-
         converted_iter = iter( converted_candidates )
         processed_img_list = [ ]
 

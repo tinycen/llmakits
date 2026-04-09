@@ -12,11 +12,10 @@ JSON 错误 → 继续下一个模型
 非 JSON 错误 → 同 return_detailed=True
 """
 
-from typing import Dict, Any
 from .dispatcher import ModelDispatcher
-from .utils.retry_handler import SingleImageBase64ConversionError
 from typing import Dict, Any, Optional, Callable
 from funcguard import print_line, print_block
+from .utils.normalize_error import ResponseError
 
 
 def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) -> tuple[str, str, int]:
@@ -142,11 +141,18 @@ def dispatcher_with_repair(
         if result.success:
             return result.return_message, result.total_tokens
 
-        if isinstance(result.error, SingleImageBase64ConversionError):
-            # 单图下载/转base64失败属于不可恢复错误，直接抛给调用方处理。
-            raise result.error
+        sdk_name, model_name, models_num = _get_model_info( dispatcher, group_name, current_index )
 
-        error_message = str(result.error)
+        # 当不成功的时候 必定有 error 信息
+        if not isinstance( result.error, ResponseError ) :
+            response_error = ResponseError( sdk_name, model_name, exception = result.error, error_tag = "" )
+        else :
+            response_error = result.error
+
+        error_message = response_error.get_error_message()
+        if "图片" in response_error.error_tag or "图片" in error_message:
+            raise response_error
+
         # 失败处理，尝试修复（仅限 JSON 错误且有原始消息）
         if result.return_message and fix_json_config and "json_error" in error_message:
             print("尝试修复JSON……")

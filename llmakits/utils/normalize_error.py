@@ -24,6 +24,8 @@ class ResponseError( Exception ) :
         return self.error_message or str( self.original_exception )
 
 
+    #
+
     # 打印报错信息
     def report_error( self, print_tag = True, print_detail = False ) :
         if self.skip_report or self.reported :
@@ -40,6 +42,7 @@ class ResponseError( Exception ) :
         self.reported = True
 
 
+    # 构建报错信息
     def _build_error_message( self, error_info: Dict ) -> str :
         """构建错误消息字符串
 
@@ -75,6 +78,7 @@ class ResponseError( Exception ) :
         return " , ".join( error_parts )
 
 
+    # 提取错误信息
     def extract_error_message( self ) -> str :
         """提取错误信息"""
         error_info = { }
@@ -103,3 +107,12 @@ class ResponseError( Exception ) :
         self.error_message = error_message
 
         return error_message
+
+
+    # 重新提取错误信息
+    def get_error_message( self ) :
+
+        if self.error_message :
+            return self.error_message
+
+        return self.extract_error_message()

@@ -173,10 +173,14 @@ class ModelDispatcher:
 
         # 验证起始索引
         if start_index < 0 or start_index >= models_num:
-            error = ValueError(f"起始索引 {start_index} 超出范围 [0, {models_num-1}]")
+            error_tag = "model索引超出范围"
+            exception = ValueError( f"起始索引 {start_index} 超出范围 [0, {models_num - 1}]" )
+            response_error = ResponseError( "", "", exception = exception, error_tag = error_tag )
+
             if return_detailed:
-                return ExecutionResult(success=False, error=error)
-            raise error
+                return ExecutionResult(success=False, error=response_error)
+
+            raise response_error
 
         # 用于跟踪已打印过"下一个模型"信息的模型索引
         printed_model_indices = set()
@@ -214,13 +218,15 @@ class ModelDispatcher:
                     try:
                         return_message = convert_to_json(return_message)
                     except Exception as json_error:
+                        response_error = ResponseError( sdk_name, model_name, exception = json_error, error_tag = "" )
+
                         if return_detailed:
                             # 返回详细结果，包含原始消息和错误信息
                             return ExecutionResult(
                                 return_message=return_message,
                                 total_tokens=total_tokens,
                                 last_tried_index=idx,
-                                error=json_error,
+                                error=response_error,
                             )
                         else:
                             # 传统模式：继续尝试下一个模型
@@ -279,8 +285,12 @@ class ModelDispatcher:
                 if idx not in printed_model_indices and response_error.reported == False :
                     print(base_model_info)
 
+                error_message = response_error.get_error_message()
+                if "图片" in response_error.error_tag or "图片" in error_message :
+                    raise response_error
+
                 # 检查是否是API密钥用尽异常或达到最大重试次数
-                error_msg = response_error.error_message
+                error_msg = response_error.get_error_message()
                 model_key = f"{sdk_name}_{model_name}"
 
                 if error_msg == 'API_KEY_EXHAUSTED':
@@ -315,7 +325,7 @@ class ModelDispatcher:
                 else:
                     # 最后一个模型也失败了
                     if return_detailed:
-                        return ExecutionResult(success=False, error=e, last_tried_index=idx)
+                        return ExecutionResult(success=False, error=response_error, last_tried_index=idx)
                     raise response_error
 
         # 如果所有模型都失败（理论上不会到这里）
