@@ -24,8 +24,6 @@ class ResponseError( Exception ) :
         return self.error_message or str( self.original_exception )
 
 
-    #
-
     # 打印报错信息
     def report_error( self, print_tag = True, print_detail = False ) :
         if self.skip_report or self.reported :
@@ -55,13 +53,15 @@ class ResponseError( Exception ) :
         """
         error = error_info.get( "error", { } )
         message = error_info.get( "message", "" )
-
         # 如果没有message，尝试从error中获取
         if not message :
-            message = error.get( "message", str( self.original_exception ) )
+            message = error.get( "message", "" )
 
         # 构建基础错误消息
-        error_parts = [ f"message: {message}" ]
+        if message :
+            error_parts = [ f"message: {message}" ]
+        else :
+            error_parts = [ str( self.original_exception ) ]
 
         metadata = error.get( "metadata", { } )  # openrouter
         raw = metadata.get( "raw", "" )
@@ -89,11 +89,11 @@ class ResponseError( Exception ) :
             response = self.original_exception
 
         if hasattr( response, 'model_dump' ) :  # 兼容 openai
-            error_info = response.model_dump()
+            error_info = response.model_dump() # type: ignore
 
         # hasattr 检查 response 是否有 json 方法
         elif hasattr( response, 'json' ) :
-            error_info = response.json()
+            error_info = response.json() # type: ignore
             # 判断 res 是否是列表
             if isinstance( error_info, list ) :
                 e_info = error_info[ 0 ]
