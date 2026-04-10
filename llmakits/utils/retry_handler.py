@@ -182,7 +182,8 @@ class RetryHandler :
             "include_img" ] :
 
             img_list = message_config[ "img_list" ]
-            print( f"img_list: {img_list}" )
+            if api_retry_count < 2 :
+                print( f"img_list: {img_list}" )
 
             for img_url in img_list :
                 domain = self._extract_domain( img_url )
