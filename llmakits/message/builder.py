@@ -241,9 +241,10 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
         if not isinstance( img_url, str ) :
             # processed_img_list.append(img_url)
             continue
-
+        # 如果已经是 通过 _build_base64_image_url 构建好的 base64 格式 ，就直接添加
         if img_url.startswith( 'data:image/' ) and ';base64,' in img_url :
             processed_img_list.append( img_url )
+            successful_conversions += 1
             continue
 
         normalized_img_url = img_url.strip()
