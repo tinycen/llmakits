@@ -53,9 +53,13 @@ class ResponseError( Exception ) :
         """
         error = error_info.get( "error", { } )
         message = error_info.get( "message", "" )
-        # 如果没有message，尝试从error中获取
-        if not message :
-            message = error.get( "message", "" )
+
+        if isinstance( error, str ) :
+            message = error
+        else :
+            # 如果没有message，尝试从error中获取
+            if not message :
+                message = error.get( "message", "" )
 
         # 构建基础错误消息
         if message :
@@ -63,17 +67,18 @@ class ResponseError( Exception ) :
         else :
             error_parts = [ str( self.original_exception ) ]
 
-        metadata = error.get( "metadata", { } )  # openrouter
-        raw = metadata.get( "raw", "" )
-        provider_name = metadata.get( "provider_name", "" )
+        if not isinstance( error, str ) :
+            metadata = error.get( "metadata", { } )  # openrouter
+            raw = metadata.get( "raw", "" )
+            provider_name = metadata.get( "provider_name", "" )
 
-        # 只在有值时添加provider信息
-        if provider_name :
-            error_parts.append( f"provider: {provider_name}" )
+            # 只在有值时添加provider信息
+            if provider_name :
+                error_parts.append( f"provider: {provider_name}" )
 
-        # 只在有值时添加detail信息
-        if raw :
-            error_parts.append( f"detail: {raw}" )
+            # 只在有值时添加detail信息
+            if raw :
+                error_parts.append( f"detail: {raw}" )
 
         return " , ".join( error_parts )
 
