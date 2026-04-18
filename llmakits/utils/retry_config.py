@@ -9,6 +9,7 @@ IMAGE_DOWNLOAD_ERROR_KEYWORDS = [
     "context deadline exceeded",  # modelscope
     "Unable to download the media",  # modelscope
     "download image error",  # modelscope
+    "unspoort image",  # modelscope
     "cannot identify image file",  # openrouter
     "Failed to download multimodal content",
     "Download multimodal file timed out",
