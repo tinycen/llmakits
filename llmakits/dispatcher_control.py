@@ -16,22 +16,9 @@ from .dispatcher import ModelDispatcher
 from typing import Dict, Any, Optional, Callable
 from funcguard import print_line, print_block
 from .utils.normalize_error import ResponseError
+from .utils.model_fallback import should_stop_model_fallback
 
 
-def _should_stop_model_fallback(response_error: ResponseError, error_message: str) -> bool:
-    """判断是否应停止模型切换并立即抛出异常。"""
-    non_fallback_error_tags = {
-        "图片下载转base64失败",
-    }
-    non_fallback_keywords = (
-        "图片",
-        "base64",
-        "强制base64域名图片转换失败",
-    )
-
-    if response_error.error_tag in non_fallback_error_tags:
-        return True
-    return any(keyword in error_message for keyword in non_fallback_keywords)
 
 
 def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) -> tuple[str, str, int]:
@@ -47,14 +34,14 @@ def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) ->
         (sdk名称, 模型名称, 模型总数)
     """
     llm_models = dispatcher.model_groups.get(group_name, [])
-    models_num = len(llm_models)
+    _ = len(llm_models)
 
-    if index < models_num:
+    if index < len(llm_models):
         model_info = llm_models[index]
         sdk_name = model_info.get('sdk_name', 'unknown_sdk')
         model_name = model_info.get('model_name', 'unknown_model')
-        return sdk_name, model_name, models_num
-    return 'unknown_sdk', 'unknown_model', models_num
+        return sdk_name, model_name, len(llm_models)
+    return 'unknown_sdk', 'unknown_model', len(llm_models)
 
 
 def _print_next_model_info(dispatcher: ModelDispatcher, group_name: str, current_idx: int) -> None:
@@ -161,12 +148,13 @@ def dispatcher_with_repair(
 
         # 当不成功的时候 必定有 error 信息
         if not isinstance( result.error, ResponseError ) :
-            response_error = ResponseError( sdk_name, model_name, exception = result.error, error_tag = "" )
+            error_to_use = result.error if result.error is not None else Exception("Unknown error")
+            response_error = ResponseError( sdk_name, model_name, exception = error_to_use, error_tag = "" )
         else :
             response_error = result.error
 
         error_message = response_error.get_error_message()
-        if _should_stop_model_fallback(response_error, error_message):
+        if should_stop_model_fallback(response_error, error_message):
             raise response_error
 
         # 失败处理，尝试修复（仅限 JSON 错误且有原始消息）
@@ -198,12 +186,14 @@ def dispatcher_with_repair(
             repair_message_info = {"user_text": user_text, "system_prompt": fix_json_system_prompt}
             try:
                 # 开始执行修复
-                fixed_message, repair_tokens = dispatcher.execute_with_group(  # type: ignore
+                repair_result = dispatcher.execute_with_group(
                     repair_message_info,
                     fix_json_config["group_name"],
                     format_json=True,
-                    return_detailed=False,  # 修复器用简单模式
+                    return_detailed=False,
                 )
+                fixed_message = repair_result[0]
+                repair_tokens = repair_result[1]
 
                 # 检查修复后的结果
                 print("修复后的JSON ：")
@@ -251,6 +241,7 @@ def dispatcher_with_repair(
             current_index = next_index if next_index > current_index else current_index + 1
 
         else:
-            raise result.error  # type: ignore
+            error_to_raise = result.error if result.error is not None else Exception("All models failed")
+            raise error_to_raise
 
     raise Exception(f"所有模型均尝试失败")
