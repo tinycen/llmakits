@@ -112,15 +112,23 @@ class RetryHandler :
         # 打印命中的强制域名，便于排查“域名已进集合但请求仍发URL”的问题。
         # print(f"命中 force-base64 域名: {sorted(matched_domains)}")
 
-        converted_candidates = convert_images_to_base64( convert_candidates, self.image_cache )
-
-        converted_iter = iter( converted_candidates )
         processed_img_list = [ ]
 
         for img_url in img_list :
             domain = self._extract_domain( img_url )
             if domain in matched_domains and not img_url.startswith( 'data:image/' ) :
-                processed_img_list.append( next( converted_iter ) )
+                converted_list = convert_images_to_base64( [ img_url ], self.image_cache )
+                converted_img = converted_list[ 0 ] if converted_list else ""
+                is_base64_image = (
+                        isinstance( converted_img, str )
+                        and converted_img.startswith( 'data:image/' )
+                        and ';base64,' in converted_img
+                )
+                if not is_base64_image :
+                    error_tag = "图片下载转base64失败"
+                    exception = Exception( f"强制base64域名图片转换失败，url：{img_url}" )
+                    raise ResponseError( self.platform, self.model_name, exception = exception, error_tag = error_tag )
+                processed_img_list.append( converted_img )
             else :
                 processed_img_list.append( img_url )
 
@@ -219,6 +227,7 @@ class RetryHandler :
 
                     converted_single_list = convert_images_to_base64( [ single_img ], self.image_cache )
                     message_config[ "img_list" ] = converted_single_list
+                    img_list = converted_single_list
 
             messages = rebuild_messages_single_image(
                 self.platform,

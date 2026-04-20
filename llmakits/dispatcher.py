@@ -145,6 +145,22 @@ class ModelDispatcher:
             # 标记下一个模型的信息已打印
             printed_model_indices.add(next_idx)
 
+    @staticmethod
+    def _should_stop_model_fallback(response_error: ResponseError, error_message: str) -> bool:
+        """判断是否应停止模型切换并立即抛出异常。"""
+        non_fallback_error_tags = {
+            "图片下载转base64失败",
+        }
+        non_fallback_keywords = (
+            "图片",
+            "base64",
+            "强制base64域名图片转换失败",
+        )
+
+        if response_error.error_tag in non_fallback_error_tags:
+            return True
+        return any(keyword in error_message for keyword in non_fallback_keywords)
+
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
         self,
@@ -287,7 +303,7 @@ class ModelDispatcher:
                     print(base_model_info)
 
                 error_message = response_error.get_error_message()
-                if "图片" in response_error.error_tag or "图片" in error_message:
+                if self._should_stop_model_fallback(response_error, error_message):
                     raise response_error
 
                 # 检查是否是API密钥用尽异常或达到最大重试次数

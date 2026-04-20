@@ -203,16 +203,16 @@ def _build_base64_image_url( base64_str: str, img_url: str = "" ) -> str :
 
 def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> List[ str ] :
     """
-    将图片列表转换为base64格式，并保持输出列表与输入列表一一对应。
+    将图片列表转换为base64格式（仅返回转换成功的图片项）。
 
     Args:
         img_list: 图片URL或base64列表
         image_cache: 可选的图片base64缓存对象
 
     Returns:
-        与输入顺序一致的图片列表。
+        仅包含转换成功项的图片列表。
         - 转换成功的项会变成 `data:image/...;base64,...`
-        - 转换失败的项会保留原始URL，便于上层决定是否继续重试
+        - 转换失败的项会被跳过
 
     Notes:
         1. 不再仅依赖 `.jpg/.jpeg/.png` 后缀判断是否可转换；
@@ -237,7 +237,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
     successful_conversions = 0
 
     for img_url in img_list :
-        # 始终保持输出列表与输入列表等长，避免上层按位置回填时发生错位。
+        # 仅保留转换成功的图片；失败项直接跳过。
         if not isinstance( img_url, str ) :
             # processed_img_list.append(img_url)
             continue
@@ -249,7 +249,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
 
         normalized_img_url = img_url.strip()
         if not normalized_img_url :
-            processed_img_list.append( img_url )
+            # processed_img_list.append(img_url)
             continue
 
         if image_cache is not None :

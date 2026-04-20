@@ -18,6 +18,22 @@ from funcguard import print_line, print_block
 from .utils.normalize_error import ResponseError
 
 
+def _should_stop_model_fallback(response_error: ResponseError, error_message: str) -> bool:
+    """判断是否应停止模型切换并立即抛出异常。"""
+    non_fallback_error_tags = {
+        "图片下载转base64失败",
+    }
+    non_fallback_keywords = (
+        "图片",
+        "base64",
+        "强制base64域名图片转换失败",
+    )
+
+    if response_error.error_tag in non_fallback_error_tags:
+        return True
+    return any(keyword in error_message for keyword in non_fallback_keywords)
+
+
 def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) -> tuple[str, str, int]:
     """
     获取指定索引的模型信息
@@ -150,7 +166,7 @@ def dispatcher_with_repair(
             response_error = result.error
 
         error_message = response_error.get_error_message()
-        if "图片" in response_error.error_tag or "图片" in error_message:
+        if _should_stop_model_fallback(response_error, error_message):
             raise response_error
 
         # 失败处理，尝试修复（仅限 JSON 错误且有原始消息）
