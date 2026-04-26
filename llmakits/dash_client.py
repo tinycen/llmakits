@@ -60,7 +60,7 @@ class DashScope :
                     return result, total_tokens
             try :
                 usage = response.usage
-                if hasattr(usage, 'input_tokens') and hasattr(usage, 'output_tokens'):
+                if usage is not None and hasattr(usage, 'input_tokens') and hasattr(usage, 'output_tokens'):
                     total_tokens = usage.input_tokens + usage.output_tokens
                 else:
                     total_tokens = 0

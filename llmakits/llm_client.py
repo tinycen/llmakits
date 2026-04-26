@@ -169,7 +169,6 @@ class BaseClient:
         else:
             if self.platform == "ollama":
                 result = response.message.content
-                total_tokens = 0
             else:
 
                 if hasattr(response, 'choices') and response.choices:
@@ -179,7 +178,8 @@ class BaseClient:
                         # self.platform == "gitcode"，部分情况适用
                         result = response.choices[0].delta["content"]
 
-                    total_tokens = response.usage.total_tokens
+                    if response.usage is not None:
+                        total_tokens = response.usage.total_tokens
 
                 else:
                     # 保留原有日志，便于问题排查
