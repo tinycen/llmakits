@@ -1,6 +1,6 @@
-### 高级用法
+# ModelDispatcher 高级用法
 
-#### 结果验证和格式化
+## 结果验证和格式化
 
 ```python
 from llmakits import ModelDispatcher
@@ -31,7 +31,7 @@ print(f"验证通过的结果: {result}")
 print(f"使用token数: {tokens}")
 ```
 
-#### 获取详细执行结果
+## 获取详细执行结果
 
 ```python
 from llmakits import ModelDispatcher
@@ -61,7 +61,7 @@ if result.error:
     print(f"错误信息: {result.error}")
 ```
 
-#### 耗时警告监控
+## 耗时警告监控
 
 ```python
 from llmakits import ModelDispatcher
@@ -97,7 +97,7 @@ print(f"模型切换次数: {dispatcher.model_switch_count}")
 - 在生产环境中跟踪异常耗时的请求
 - 优化模型选择和配置，提高整体响应速度
 
-#### 指定起始模型索引
+## 指定起始模型索引
 
 ```python
 from llmakits import ModelDispatcher

@@ -1,6 +1,6 @@
-### 电商工具
+# 电商工具 e_commerce
 
-#### 基础工具函数
+## 基础工具函数
 
 中文字符检测，字符长度检测，HTML验证
 
@@ -16,11 +16,11 @@ allowed_tags = {'div', 'p', 'span', 'strong', 'em'}
 is_valid, error_msg = validate_html("<div>内容</div>", allowed_tags)
 ```
 
-#### 高级电商功能
+## 高级电商功能
 
 电商工具函数现在支持使用模型组名称，更加简洁：
 
-##### 优化商品标题
+### 优化商品标题
 
 ```python
 from llmakits.e_commerce import generate_title
@@ -42,7 +42,7 @@ title = generate_title(
 )
 ```
 
-##### 预测商品类目
+### 预测商品类目
 
 ```python
 from llmakits.e_commerce import predict_cat_direct
@@ -79,7 +79,7 @@ categories_with_fix = predict_cat_direct(
 )
 ```
 
-##### 梯度预测商品类目（逐级预测）
+### 梯度预测商品类目（逐级预测）
 
 ```python
 from llmakits.e_commerce import predict_cat_gradual
@@ -99,7 +99,7 @@ categories_gradual = predict_cat_gradual(
 )
 ```
 
-##### 翻译商品选项
+### 翻译商品选项
 
 ```python
 from llmakits.e_commerce import translate_options
@@ -115,7 +115,7 @@ translated = translate_options(
 )
 ```
 
-##### 生成HTML商品描述
+### 生成HTML商品描述
 
 ```python
 from llmakits.e_commerce import generate_html
@@ -138,7 +138,7 @@ html_description = generate_html(
 )
 ```
 
-##### 填充属性值
+### 填充属性值
 
 ```python
 from llmakits.e_commerce import fill_attr
