@@ -134,7 +134,7 @@ my_models = models['my_models']
 
 ModelDispatcher 提供了两种使用方式，推荐使用 `execute_with_group` 方法：
 
-**方式一：使用模型组（推荐）**
+**方式一：使用模型组（execute_with_group）**
 
 ```python
 from llmakits import ModelDispatcher
@@ -182,7 +182,7 @@ message_info = {
 # 如果include_img = True 同时 img_list 是空的，此时会报出错误。
 ```
 
-**方式二：手动传入模型列表**
+**方式二：手动传入模型列表（execute_task）**
 
 ```python
 from llmakits import ModelDispatcher
@@ -200,126 +200,12 @@ message_info = {
 result, tokens = dispatcher.execute_task(message_info, my_models)
 ```
 
-#### 高级用法：结果验证和格式化
+#### 高级用法
 
-```python
-from llmakits import ModelDispatcher
-
-# 创建调度器
-dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
-
-# 定义结果验证函数
-def validate_result(result):
-    """验证结果是否包含必要的字段"""
-    return "python" in result.lower() and "编程" in result
-
-# 准备消息
-message_info = {
-    "system_prompt": "你是一个编程专家",
-    "user_text": "请介绍Python语言的特点"
-}
-
-# 执行任务，启用JSON格式化和结果验证
-result, tokens = dispatcher.execute_with_group(
-    message_info,
-    group_name="generate_title",
-    format_json=True,           # 格式化为JSON
-    validate_func=validate_result  # 验证结果
-)
-
-print(f"验证通过的结果: {result}")
-print(f"使用token数: {tokens}")
-```
-
-#### 高级用法：获取详细执行结果
-
-```python
-from llmakits import ModelDispatcher
-from llmakits.dispatcher import ExecutionResult
-
-# 创建调度器
-dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
-
-# 准备消息
-message_info = {
-    "system_prompt": "你是一个编程专家",
-    "user_text": "请介绍Python语言的特点"
-}
-
-# 获取详细执行结果
-result: ExecutionResult = dispatcher.execute_with_group(
-    message_info,
-    group_name="generate_title",
-    return_detailed=True  # 返回详细结果
-)
-
-print(f"返回消息: {result.return_message}")
-print(f"使用token数: {result.total_tokens}")
-print(f"最后尝试的模型索引: {result.last_tried_index}")
-print(f"是否成功: {result.success}")
-if result.error:
-    print(f"错误信息: {result.error}")
-```
-
-#### 高级用法：耗时警告监控
-
-```python
-from llmakits import ModelDispatcher
-
-# 创建调度器并设置耗时警告阈值（单位：秒）
-dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
-dispatcher.warning_time = 30  # 设置30秒为耗时警告阈值
-
-# 准备消息
-message_info = {
-    "system_prompt": "你是一个 helpful 助手",
-    "user_text": "请详细介绍Python编程语言及其生态系统"
-}
-
-# 执行任务 - 当模型执行时间超过30秒时会显示警告
-result, tokens = dispatcher.execute_with_group(message_info, group_name="generate_title")
-print(f"结果: {result}")
-print(f"使用token数: {tokens}")
-
-# 查看模型切换次数
-print(f"模型切换次数: {dispatcher.model_switch_count}")
-```
-
-#### 高级用法：指定起始模型索引
-
-```python
-from llmakits import ModelDispatcher
-
-# 创建调度器
-dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
-
-# 准备消息
-message_info = {
-    "system_prompt": "你是一个 helpful 助手",
-    "user_text": "请介绍一下Python编程语言"
-}
-
-# 从第2个模型开始执行（索引从0开始）
-result, tokens = dispatcher.execute_with_group(
-    message_info,
-    group_name="generate_title",
-    start_index=1  # 从第2个模型开始
-)
-print(f"结果: {result}")
-print(f"使用token数: {tokens}")
-```
-
-**耗时警告功能特点：**
-
-1. **性能监控**: 当模型执行时间超过设定阈值时，自动显示警告信息
-2. **灵活配置**: 可以根据业务需求设置不同的警告阈值
-3. **不影响执行**: 警告信息不会中断任务执行，仅作为性能提示
-4. **详细报告**: 警告信息包含模型名称和实际执行时间
-
-**使用场景：**
-- 监控模型响应性能，及时发现性能问题
-- 在生产环境中跟踪异常耗时的请求
-- 优化模型选择和配置，提高整体响应速度
+- [结果验证和格式化](doc/dispatcher_advanced.md#结果验证和格式化)
+- [获取详细执行结果](doc/dispatcher_advanced.md#获取详细执行结果)
+- [耗时警告监控](doc/dispatcher_advanced.md#耗时警告监控)
+- [指定起始模型索引](doc/dispatcher_advanced.md#指定起始模型索引)
 
 #### 增强版调度策略：dispatcher_with_repair
 
@@ -413,69 +299,23 @@ client = BaseOpenai(
     request_timeout=60,       # 请求超时时间（秒）
     max_retries=3            # 最大重试次数
 )
-
-# 获取可用模型列表（DataFrame格式）
-models_df = client.models_df()
-print(f"可用模型: {models_df}")
 ```
 
 #### 获取模型信息
 
 ```python
-from llmakits import BaseOpenai
-
-# 创建客户端
-client = BaseOpenai(
-    platform="openai",
-    base_url="https://api.openai.com/v1",
-    api_keys=["your-api-key"],
-    model_name="gpt-4o"
-)
-
 # 获取模型列表（DataFrame格式，包含创建时间等信息）
 models_df = client.models_df()
 print(f"模型列表:")
 print(models_df)
-
-# 获取特定模型的创建时间
-if 'created' in models_df.columns:
-    gpt4o_created = models_df[models_df['id'] == 'gpt-4o']['created'].iloc[0]
-    print(f"GPT-4o 创建时间: {gpt4o_created}")
-```
-
-#### 错误处理和API密钥耗尽
-
-```python
-from llmakits import BaseOpenai
-
-client = BaseOpenai(
-    platform="openai",
-    base_url="https://api.openai.com/v1",
-    api_keys=["your-api-key"],
-    model_name="gpt-4o"
-)
-
-try:
-    response, tokens = client.send_message([], message_info)
-    print(f"模型响应: {response}")
-except Exception as e:
-    if "API key exhausted" in str(e):
-        print("API密钥已耗尽，请更换密钥")
-    else:
-        print(f"发生错误: {e}")
 ```
 
 ## 高级功能
 
-转JSON字符串，提取字段
-
-### 消息处理
+### JSON字符串转换，字段提取
 
 ```python
-from llmakits.message import prepare_messages, extract_field, convert_to_json
-
-# 准备消息
-messages = prepare_messages(system="你是一个助手", user="请帮忙", assistant="好的")
+from llmakits.message import extract_field, convert_to_json
 
 # 提取并转换为JSON
 json_str = '{"name": "test"} some text'
@@ -489,7 +329,6 @@ print(field_value)  # 输出: test
 name, age = extract_field(json_str, "name", "age")
 print(name)  # 输出: test
 print(age)  # 输出: None
-
 ```
 
 ### 电商工具
