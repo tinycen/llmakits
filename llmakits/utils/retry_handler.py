@@ -16,6 +16,20 @@ from .retry_config import (
     DEFAULT_RETRY_API_KEYWORDS,
 )
 
+def should_retry_for_rate_limit( error_message: str ) -> bool :
+    """判断是否因为限流而重试"""
+    return any( keyword in error_message for keyword in DEFAULT_RETRY_KEYWORDS )
+
+# 图片错误
+def is_image_error( error_message: str ) -> bool :
+    """判断是否因为图片错误而重试"""
+    image_errors = [ "图片" ] + IMAGE_DOWNLOAD_ERROR_KEYWORDS
+    return any( error in error_message for error in image_errors )
+
+def should_retry_for_image_error( error_message: str, message_config: Dict ) -> bool :
+    """判断是否因为图片错误而重试"""
+    return is_image_error( error_message ) and message_config[ "include_img" ]
+
 
 class RetryHandler :
     """处理API请求重试逻辑的组件"""
@@ -159,17 +173,6 @@ class RetryHandler :
         return message_info
 
 
-    def should_retry_for_rate_limit( self, error_message: str ) -> bool :
-        """判断是否因为限流而重试"""
-        return any( keyword in error_message for keyword in DEFAULT_RETRY_KEYWORDS )
-
-
-    def should_retry_for_image_error( self, error_message: str, message_config: Dict ) -> bool :
-        """判断是否因为图片错误而重试"""
-        image_errors = [ "输入图片数量超过限制", "图片输入格式/解析错误" ]
-        return any( error in error_message for error in image_errors ) and message_config[ "include_img" ]
-
-
     def handle_rate_limit_error(
             self, error_message: str, api_retry_count: int, messages: Any, message_config: Dict
     ) -> Tuple[ bool, Any ] :
@@ -295,14 +298,14 @@ class RetryHandler :
         error_message = response_error.extract_error_message()
 
         # 判断是否应该重试
-        if self.should_retry_for_rate_limit( error_message ) :
+        if should_retry_for_rate_limit( error_message ) :
             response_error.report_error( print_tag = False )
             should_retry, updated_messages = self.handle_rate_limit_error(
                 error_message, api_retry_count, messages, message_config
             )
             return should_retry, updated_messages, False
 
-        elif self.should_retry_for_image_error( error_message, message_config ) :
+        elif should_retry_for_image_error( error_message, message_config ) :
             response_error.report_error( print_tag = False )
             should_retry, updated_messages = self.handle_image_error( message_config )
             return should_retry, updated_messages, False

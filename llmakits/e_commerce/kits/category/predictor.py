@@ -9,12 +9,11 @@ from .utils import (
     standardize_category_format,
     extr_cat_tree,
     get_category_depth,
-    prepare_category_data,
     create_message_info,
     execute_prediction,
-    match_recall_merge,
 )
 from .validator import create_category_validate_func
+from ....utils.retry_handler import is_image_error
 
 
 def predict_cat_direct(
@@ -22,6 +21,7 @@ def predict_cat_direct(
     product: dict,
     predict_config: dict,
     fix_json_config: dict = {},
+    retry_without_image: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     直接预测商品类目（全部类目一起预测，带验证器）
@@ -62,13 +62,14 @@ def predict_cat_direct(
     try:
         group_name = "with_image" if image_url else "without_image"
         return execute_prediction(dispatcher, message_info, group_name, validate_func, fix_json_config)
-    except Exception:
-        if image_url:
+    except Exception as e:
+        error_message = str(e)
+        if image_url and is_image_error(error_message) and retry_without_image:
             print("预测失败，尝试去掉图片后预测……")
             message_info["include_img"] = False
             message_info["img_list"] = []
             return execute_prediction(dispatcher, message_info, "without_image", validate_func, fix_json_config)
-        return []
+        raise e
 
 
 def predict_cat_gradual(
