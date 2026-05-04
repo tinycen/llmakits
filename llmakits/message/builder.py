@@ -235,11 +235,14 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
 
     processed_img_list = [ ]
     successful_conversions = 0
+    success_logs = [ ]
+    failure_errors = [ ]
 
     for img_url in img_list :
         # 仅保留转换成功的图片；失败项直接跳过。
         if not isinstance( img_url, str ) :
             # processed_img_list.append(img_url)
+            failure_errors.append( f"{img_url}: 图片地址不是字符串" )
             continue
         # 如果已经是 通过 _build_base64_image_url 构建好的 base64 格式 ，就直接添加
         if img_url.startswith( 'data:image/' ) and ';base64,' in img_url :
@@ -250,6 +253,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
         normalized_img_url = img_url.strip()
         if not normalized_img_url :
             # processed_img_list.append(img_url)
+            failure_errors.append( f"{img_url}: 图片地址为空" )
             continue
 
         if image_cache is not None :
@@ -258,23 +262,29 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             if cached_base64 :
                 is_valid, error_msg = validate_base64_content( cached_base64, expected_type = "image" )
                 if is_valid :
-                    print( f"已从缓存中获取图片base64: {normalized_img_url}" )
+                    success_logs.append( f"已从缓存中获取图片base64: {normalized_img_url}" )
                     processed_img_list.append( _build_base64_image_url( cached_base64, normalized_img_url ) )
                     successful_conversions += 1
                     continue
-                print( f"缓存中的base64内容无效，已跳过: {normalized_img_url}, 原因: {error_msg}" )
+                message = f"缓存中的base64内容无效，已跳过: {normalized_img_url}, 原因: {error_msg}"
+                print( message )
+                failure_errors.append( message )
 
         try :
             # 不依赖URL后缀，直接按URL下载并探测真实内容类型。
             base64_str = download_encode_base64( normalized_img_url )
             if not base64_str :
-                print( f"转换后, base64_str 为空，: {normalized_img_url}" )
+                message = f"转换后, base64_str 为空，: {normalized_img_url}"
+                print( message )
+                failure_errors.append( message )
                 # processed_img_list.append(img_url)
                 continue
 
             is_valid, error_msg = validate_base64_content( base64_str, expected_type = "image" )
             if not is_valid :
-                print( f"转换后，base64 验证失败，已跳过: {normalized_img_url}, 原因: {error_msg}" )
+                message = f"转换后，base64 验证失败，已跳过: {normalized_img_url}, 原因: {error_msg}"
+                print( message )
+                failure_errors.append( message )
                 # processed_img_list.append(img_url)
                 continue
 
@@ -284,20 +294,30 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             processed_img_list.append( _build_base64_image_url( base64_str, normalized_img_url ) )
 
             successful_conversions += 1
-            print( f"已将图片转换为base64格式: {normalized_img_url}" )
+            success_logs.append( f"已将图片转换为base64格式: {normalized_img_url}" )
 
         except Exception as e :
-            print( f"图片下载转base64失败: {normalized_img_url}\n{e}" )
+            message = f"图片下载转base64失败: {normalized_img_url}\n{e}"
+            print( message )
+            failure_errors.append( message )
             # processed_img_list.append(img_url)
 
     if successful_conversions == 0 :
         error_tag = "图片下载转base64失败"
-        exception = Exception( f"所有图片 下载/转换base64 均失败，url：{img_list}" )
+        error_message = f"所有图片 下载/转换base64 均失败，url：{img_list}"
+        if failure_errors :
+            error_message = f"{error_message}\n" + "\n".join( failure_errors )
+        exception = Exception( error_message )
         response_error = ResponseError( "", "",
                                         exception = exception,
                                         error_tag = error_tag )
         response_error.skip_report = True
         raise response_error
+
+    for success_log in success_logs :
+        print( success_log )
+    if failure_errors :
+        print( f"图片组base64转换部分成功：成功 {successful_conversions} 张，失败 {len(failure_errors)} 张" )
 
     return processed_img_list
 
