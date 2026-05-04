@@ -222,10 +222,13 @@ class RetryHandler :
             if api_retry_count < 2 :
                 print( f"img_list: {img_list}" )
 
+            failed_domains = set()
             for img_url in img_list :
                 domain = self._extract_domain( img_url )
                 if domain :
-                    self._record_domain_failure( domain )
+                    failed_domains.add( domain )
+            for domain in failed_domains :
+                self._record_domain_failure( domain )
 
             # 命中域名策略：优先将该域名图片转为base64后重试。
             img_list = self._convert_force_domains_to_base64( img_list )

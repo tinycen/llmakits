@@ -201,6 +201,12 @@ def _build_base64_image_url( base64_str: str, img_url: str = "" ) -> str :
     return f"data:{mime_type};base64,{base64_str}"
 
 
+def _mark_image_conversion_failed( image_cache, img_url: str, reason: str ) -> None :
+    """记录图片转换失败，兼容没有失败缓存能力的缓存对象。"""
+    if image_cache is not None and hasattr( image_cache, "mark_failed" ) :
+        image_cache.mark_failed( img_url, reason )
+
+
 def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> List[ str ] :
     """
     将图片列表转换为base64格式（仅返回转换成功的图片项）。
@@ -257,6 +263,17 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             continue
 
         if image_cache is not None :
+            if hasattr( image_cache, "is_failed" ) and image_cache.is_failed( normalized_img_url ) :
+                reason = ""
+                if hasattr( image_cache, "get_failed_reason" ) :
+                    reason = image_cache.get_failed_reason( normalized_img_url )
+                message = f"已跳过失败缓存图片: {normalized_img_url}"
+                if reason :
+                    message = f"{message}, 原因: {reason}"
+                print( message )
+                failure_errors.append( message )
+                continue
+
             # 先查缓存，减少重复下载。
             cached_base64 = image_cache.get( normalized_img_url )
             if cached_base64 :
@@ -269,6 +286,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"缓存中的base64内容无效，已跳过: {normalized_img_url}, 原因: {error_msg}"
                 print( message )
                 failure_errors.append( message )
+                _mark_image_conversion_failed( image_cache, normalized_img_url, error_msg )
 
         try :
             # 不依赖URL后缀，直接按URL下载并探测真实内容类型。
@@ -277,6 +295,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"转换后, base64_str 为空，: {normalized_img_url}"
                 print( message )
                 failure_errors.append( message )
+                _mark_image_conversion_failed( image_cache, normalized_img_url, "base64_str 为空" )
                 # processed_img_list.append(img_url)
                 continue
 
@@ -285,6 +304,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"转换后，base64 验证失败，已跳过: {normalized_img_url}, 原因: {error_msg}"
                 print( message )
                 failure_errors.append( message )
+                _mark_image_conversion_failed( image_cache, normalized_img_url, error_msg )
                 # processed_img_list.append(img_url)
                 continue
 
@@ -300,6 +320,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             message = f"图片下载转base64失败: {normalized_img_url}\n{e}"
             print( message )
             failure_errors.append( message )
+            _mark_image_conversion_failed( image_cache, normalized_img_url, str( e ) )
             # processed_img_list.append(img_url)
 
     if successful_conversions == 0 :

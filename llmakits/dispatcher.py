@@ -67,6 +67,7 @@ class ModelDispatcher:
         """获取缓存统计信息"""
         return {
             "cache_size": cls._global_image_cache.size(),
+            "failed_cache_size": cls._global_image_cache.failed_size(),
             "max_size": cls._global_image_cache.max_size,
         }
 
