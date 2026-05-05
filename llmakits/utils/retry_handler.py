@@ -42,7 +42,9 @@ class RetryHandler :
         self.force_base64_domains: Set[ str ] = self._retry_state[ "force_base64_domains" ]
         self.domain_failure_stats: Dict[ str, Dict[ str, int ] ] = self._retry_state[ "domain_failure_stats" ]
         self._last_failed_domain = self._retry_state[ "last_failed_domain" ]
+        self.api_key_error_reported = False
         # 获取全局图片缓存
+
         self.image_cache = None
         try :
             # 注意：必须在这里导入，避免循环引用
@@ -56,7 +58,17 @@ class RetryHandler :
             pass
 
 
+    def _report_api_key_error( self, response_error: ResponseError ) -> None :
+        """同一请求内，API Key 耗尽只打印一次模型头信息。"""
+        if self.api_key_error_reported :
+            return
+
+        response_error.report_error( print_tag = False )
+        self.api_key_error_reported = True
+
+
     def _extract_domain( self, img_url: str ) -> str :
+
         """提取图片URL中的域名。"""
         if not isinstance( img_url, str ) or not img_url or img_url.startswith( 'data:image/' ) :
             return ""
@@ -340,7 +352,7 @@ class RetryHandler :
             return should_retry, updated_messages, False
 
         elif any( keyword in error_message for keyword in DEFAULT_RETRY_API_KEYWORDS ) :
-            response_error.report_error( print_tag = False )
+            self._report_api_key_error( response_error )
             print( "模型每日请求超过限制 或 免费额度已用完" )
             return True, messages, True  # 需要重试且需要切换API密钥
 

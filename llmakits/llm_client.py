@@ -50,8 +50,10 @@ class BaseClient:
         messages, request_data = prepare_request_data(self.platform, messages, message_info)
 
         # 执行重试逻辑
+        self.retry_handler.api_key_error_reported = False
         max_retries = 4  # 考虑到 需要切换api key , 以及可能面临图片异常，设置为 4 比较合理
         api_retry_count = 0
+
 
         while api_retry_count < max_retries:
 
