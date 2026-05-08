@@ -16,7 +16,7 @@ except FileNotFoundError:
 
 setup(
     name='llmakits',
-    version='0.6.54',
+    version='0.6.55',
     packages=find_packages(),
     install_requires=install_requires,
     author='tinycen',
@@ -36,14 +36,12 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.12',
-        'Programming Language :: Python :: 3.13',
-        'Programming Language :: Python :: 3.14',
+        'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Text Processing :: Linguistic',
     ],
-    python_requires='>=3.12',
+    python_requires='>=3.10',
     extras_require={
         'dev': [
             'pytest>=6.0',
