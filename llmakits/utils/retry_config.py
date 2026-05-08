@@ -61,3 +61,8 @@ DEFAULT_RETRY_API_KEYWORDS = [
     "Invalid model id",  # gitcode
     "Inference Serverless API for this model not found",  # gitcode
 ]
+
+# 静默的错误关键词列表（只有不在静默列表中的错误，才打印提示）
+SILENT_ERROR_MESSAGES = [
+    "原始响应中没有choices",
+]

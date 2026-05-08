@@ -16,7 +16,7 @@ except FileNotFoundError:
 
 setup(
     name='llmakits',
-    version='0.6.55',
+    version='0.6.56',
     packages=find_packages(),
     install_requires=install_requires,
     author='tinycen',
