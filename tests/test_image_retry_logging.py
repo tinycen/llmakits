@@ -86,7 +86,48 @@ class ImageRetryLoggingTest(unittest.TestCase):
         self.assertEqual(1, calls["https://example.com/ok.jpg"])
         self.assertEqual(1, calls["https://example.com/missing.jpg"])
         self.assertTrue(image_cache.is_failed("https://example.com/missing.jpg"))
-        self.assertIn("已跳过失败缓存图片: https://example.com/missing.jpg", output.getvalue())
+        self.assertIn("已从图片组缓存获取可用图片", output.getvalue())
+
+    def test_image_group_cache_reuses_successful_images(self):
+        calls = {"https://example.com/ok.jpg": 0, "https://example.com/missing.jpg": 0}
+
+        def fake_download_encode_base64(url):
+            calls[url] += 1
+            if url.endswith("ok.jpg"):
+                return "/9j/valid"
+            raise Exception("HTTP Error 404")
+
+        image_cache = ImageBase64Cache()
+        img_list = ["https://example.com/ok.jpg", "https://example.com/missing.jpg"]
+        with patch.object(builder, "download_encode_base64", fake_download_encode_base64):
+            first = builder.convert_images_to_base64(img_list, image_cache=image_cache)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                second = builder.resolve_images_with_cache(img_list, image_cache=image_cache)
+
+        self.assertEqual(first, second)
+        self.assertEqual(1, calls["https://example.com/ok.jpg"])
+        self.assertEqual(1, calls["https://example.com/missing.jpg"])
+        self.assertEqual(1, image_cache.group_size())
+        self.assertIn("已从图片组缓存获取可用图片", output.getvalue())
+
+    def test_image_group_cache_all_failed_raises_without_retrying_download(self):
+        calls = {"https://example.com/missing.jpg": 0}
+
+        def fake_download_encode_base64(url):
+            calls[url] += 1
+            raise Exception("HTTP Error 404")
+
+        image_cache = ImageBase64Cache()
+        img_list = ["https://example.com/missing.jpg"]
+        with patch.object(builder, "download_encode_base64", fake_download_encode_base64):
+            with self.assertRaises(ResponseError):
+                builder.convert_images_to_base64(img_list, image_cache=image_cache)
+            with self.assertRaises(ResponseError):
+                builder.resolve_images_with_cache(img_list, image_cache=image_cache)
+
+        self.assertEqual(1, calls["https://example.com/missing.jpg"])
+        self.assertEqual(1, image_cache.group_size())
 
     def test_same_domain_is_recorded_once_per_retry_error(self):
         handler = RetryHandler("modelscope", "Qwen/Qwen3-VL-235B-A22B-Instruct")
@@ -101,16 +142,50 @@ class ImageRetryLoggingTest(unittest.TestCase):
             "user_text": "x",
         }
 
-        with patch(
-            "llmakits.utils.retry_handler.convert_images_to_base64",
-            return_value=["data:image/jpeg;base64,/9j/valid"],
-        ):
+        with patch.object(builder, "download_encode_base64", return_value="/9j/valid"):
             handler.handle_rate_limit_error("download image error", 0, [], message_config)
 
         stats = handler.domain_failure_stats["example.com"]
         self.assertEqual(1, stats["consecutive"])
         self.assertEqual(1, stats["cumulative"])
         self.assertNotIn("example.com", handler.force_base64_domains)
+
+    def test_retry_image_error_populates_group_cache_for_next_request(self):
+        calls = {"https://example.com/ok.jpg": 0, "https://example.com/missing.jpg": 0}
+
+        def fake_download_encode_base64(url):
+            calls[url] += 1
+            if url.endswith("ok.jpg"):
+                return "/9j/valid"
+            raise Exception("HTTP Error 404")
+
+        handler = RetryHandler("modelscope", "Qwen/Qwen3-VL-235B-A22B-Instruct")
+        img_list = ["https://example.com/ok.jpg", "https://example.com/missing.jpg"]
+        message_config = {
+            "include_img": True,
+            "img_list": img_list,
+            "system_prompt": "",
+            "user_text": "x",
+        }
+
+        with patch.object(builder, "download_encode_base64", fake_download_encode_base64):
+            handler.handle_rate_limit_error("download image error", 0, [], message_config)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                resolved_info = handler.preprocess_message_info(
+                    {
+                        "include_img": True,
+                        "img_list": img_list,
+                        "system_prompt": "",
+                        "user_text": "next",
+                    }
+                )
+
+        self.assertEqual(1, calls["https://example.com/ok.jpg"])
+        self.assertEqual(1, calls["https://example.com/missing.jpg"])
+        self.assertEqual(1, len(resolved_info["img_list"]))
+        self.assertTrue(resolved_info["img_list"][0].startswith("data:image/jpeg;base64,"))
+        self.assertIn("已从图片组缓存获取可用图片", output.getvalue())
 
     def test_dispatcher_does_not_print_model_header_for_skip_report_image_error(self):
         class FailingModel:

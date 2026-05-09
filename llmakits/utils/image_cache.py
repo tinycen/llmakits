@@ -4,7 +4,7 @@
 """
 
 from collections import OrderedDict
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class ImageBase64Cache:
@@ -23,6 +23,7 @@ class ImageBase64Cache:
         self.max_size = max_size
         self.cache = OrderedDict()  # 使用OrderedDict实现LRU
         self.failed_cache = OrderedDict()
+        self.group_cache = OrderedDict()
 
     def get(self, url: str) -> Optional[str]:
         """
@@ -96,6 +97,7 @@ class ImageBase64Cache:
         """清空缓存"""
         self.cache.clear()
         self.failed_cache.clear()
+        self.group_cache.clear()
 
     def size(self) -> int:
         """返回当前缓存大小"""
@@ -108,3 +110,47 @@ class ImageBase64Cache:
     def failed_size(self) -> int:
         """返回当前失败缓存大小"""
         return len(self.failed_cache)
+
+    def _make_group_key(self, img_list: List[str]) -> Tuple[str, ...]:
+        """生成图片组稳定key。"""
+        return tuple(img.strip() if isinstance(img, str) else str(img) for img in img_list)
+
+    def get_group_result(self, img_list: List[str]) -> Optional[Dict[str, object]]:
+        """获取图片组处理结果。"""
+        key = self._make_group_key(img_list)
+        if key not in self.group_cache:
+            return None
+        self.group_cache.move_to_end(key)
+        result = self.group_cache[key]
+        return {
+            "successful_images": list(result.get("successful_images", [])),
+            "failed_urls": list(result.get("failed_urls", [])),
+            "all_failed": bool(result.get("all_failed", False)),
+        }
+
+    def put_group_result(
+        self,
+        img_list: List[str],
+        successful_images: List[str],
+        failed_urls: List[str],
+        all_failed: bool,
+    ) -> None:
+        """记录图片组处理结果。"""
+        if not img_list:
+            return
+
+        key = self._make_group_key(img_list)
+        if key in self.group_cache:
+            self.group_cache.move_to_end(key)
+
+        self.group_cache[key] = {
+            "successful_images": list(successful_images),
+            "failed_urls": list(failed_urls),
+            "all_failed": all_failed,
+        }
+        if len(self.group_cache) > self.max_size:
+            self.group_cache.popitem(last=False)
+
+    def group_size(self) -> int:
+        """返回当前图片组缓存大小。"""
+        return len(self.group_cache)

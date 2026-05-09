@@ -6,7 +6,7 @@
 from funcguard import time_wait
 from typing import Dict, Tuple, Any, List, Set
 from urllib.parse import urlparse
-from ..message import rebuild_messages_single_image, convert_images_to_base64
+from ..message import rebuild_messages_single_image, convert_images_to_base64, resolve_images_with_cache
 from .normalize_error import ResponseError
 from .retry_state import get_retry_state
 from .retry_config import (
@@ -208,7 +208,13 @@ class RetryHandler :
         if not message_info.get( "include_img" ) or not message_info.get( "img_list" ) :
             return message_info
 
-        message_info[ "img_list" ] = self._convert_force_domains_to_base64( message_info[ "img_list" ] )
+        img_list = resolve_images_with_cache(
+            message_info[ "img_list" ],
+            self.image_cache,
+            convert_uncached = False,
+        )
+        img_list = self._convert_force_domains_to_base64( img_list )
+        message_info[ "img_list" ] = img_list
         return message_info
 
 
@@ -243,18 +249,14 @@ class RetryHandler :
             for domain in failed_domains :
                 self._record_domain_failure( domain )
 
-            # 命中域名策略：优先将该域名图片转为base64后重试。
-            img_list = self._convert_force_domains_to_base64( img_list )
-            # 这里必须同步回写 message_config，避免后续同一轮 retry 又拿到旧的 URL 列表。
+            # 模型端图片下载失败后，整组做一次本地探测：
+            # 成功项写入图片组缓存，失败项写入单图失败缓存，后续同一组图片可直接复用。
+            img_list = resolve_images_with_cache(
+                img_list,
+                self.image_cache,
+                convert_uncached = True,
+            )
             message_config[ "img_list" ] = img_list
-
-            # 第2次重试前，再做一次整批base64尝试。
-            if api_retry_count == 1 and img_list :
-
-                img_list = convert_images_to_base64( img_list, self.image_cache )
-
-                # 再次回写，确保后续 retry / image_error 分支读取到的是最新状态。
-                message_config[ "img_list" ] = img_list
 
             # 多图重试时只保留一张，优先保留已经转成 base64 的图片。
             img_list = self._select_single_retry_img_list( img_list )

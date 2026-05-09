@@ -68,6 +68,7 @@ class ModelDispatcher:
         return {
             "cache_size": cls._global_image_cache.size(),
             "failed_cache_size": cls._global_image_cache.failed_size(),
+            "group_cache_size": cls._global_image_cache.group_size(),
             "max_size": cls._global_image_cache.max_size,
         }
 

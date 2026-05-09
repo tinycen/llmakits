@@ -207,6 +207,131 @@ def _mark_image_conversion_failed( image_cache, img_url: str, reason: str ) -> N
         image_cache.mark_failed( img_url, reason )
 
 
+def _get_image_cache( image_cache = None ) :
+    """获取图片缓存对象。"""
+    if image_cache is not None :
+        return image_cache
+
+    try :
+        from ..dispatcher import ModelDispatcher
+
+        return ModelDispatcher.get_image_cache()
+    except ImportError :
+        return None
+
+
+def _is_base64_image_url( img_url: str ) -> bool :
+    return isinstance( img_url, str ) and img_url.startswith( 'data:image/' ) and ';base64,' in img_url
+
+
+def _raise_all_images_failed( img_list: List[ str ], failure_errors: List[ str ] ) -> None :
+    error_tag = "图片下载转base64失败"
+    error_message = f"所有图片 下载/转换base64 均失败，url：{img_list}"
+    if failure_errors :
+        error_message = f"{error_message}\n" + "\n".join( failure_errors )
+    exception = Exception( error_message )
+    response_error = ResponseError( "", "",
+                                    exception = exception,
+                                    error_tag = error_tag )
+    response_error.skip_report = True
+    raise response_error
+
+
+def resolve_images_with_cache(
+        img_list: List[ str ],
+        image_cache = None,
+        convert_uncached: bool = False,
+) -> List[ str ] :
+    """
+    使用单图/图片组缓存解析图片列表。
+
+    convert_uncached=False 时只应用已知缓存结果，不主动下载未知URL；
+    convert_uncached=True 时会对未知URL执行下载转base64，并写入单图和图片组缓存。
+    """
+    if not img_list :
+        raise ValueError( "图片 img_list 不能为空!" )
+
+    image_cache = _get_image_cache( image_cache )
+
+    if image_cache is not None and hasattr( image_cache, "get_group_result" ) :
+        group_result = image_cache.get_group_result( img_list )
+        if group_result :
+            successful_images = group_result.get( "successful_images", [ ] )
+            failed_urls = group_result.get( "failed_urls", [ ] )
+            all_failed = group_result.get( "all_failed", False )
+
+            if successful_images :
+                if failed_urls :
+                    print( f"已从图片组缓存获取可用图片，跳过失败图片 {len(failed_urls)} 张" )
+                else :
+                    print( "已从图片组缓存获取可用图片" )
+                return list( successful_images )
+
+            if all_failed :
+                failure_errors = [ f"已命中图片组失败缓存: {img_url}" for img_url in img_list ]
+                _raise_all_images_failed( img_list, failure_errors )
+
+    if convert_uncached :
+        return convert_images_to_base64( img_list, image_cache )
+
+    resolved_img_list = [ ]
+    failed_urls = [ ]
+    failure_errors = [ ]
+
+    for img_url in img_list :
+        if not isinstance( img_url, str ) :
+            resolved_img_list.append( img_url )
+            continue
+
+        normalized_img_url = img_url.strip()
+        if not normalized_img_url :
+            continue
+
+        if _is_base64_image_url( normalized_img_url ) :
+            resolved_img_list.append( normalized_img_url )
+            continue
+
+        if image_cache is None :
+            resolved_img_list.append( normalized_img_url )
+            continue
+
+        if hasattr( image_cache, "is_failed" ) and image_cache.is_failed( normalized_img_url ) :
+            reason = ""
+            if hasattr( image_cache, "get_failed_reason" ) :
+                reason = image_cache.get_failed_reason( normalized_img_url )
+            message = f"已跳过失败缓存图片: {normalized_img_url}"
+            if reason :
+                message = f"{message}, 原因: {reason}"
+            print( message )
+            failed_urls.append( normalized_img_url )
+            failure_errors.append( message )
+            continue
+
+        cached_base64 = image_cache.get( normalized_img_url )
+        if cached_base64 :
+            is_valid, error_msg = validate_base64_content( cached_base64, expected_type = "image" )
+            if is_valid :
+                print( f"已从缓存中获取图片base64: {normalized_img_url}" )
+                resolved_img_list.append( _build_base64_image_url( cached_base64, normalized_img_url ) )
+                continue
+
+            message = f"缓存中的base64内容无效，已跳过: {normalized_img_url}, 原因: {error_msg}"
+            print( message )
+            failed_urls.append( normalized_img_url )
+            failure_errors.append( message )
+            _mark_image_conversion_failed( image_cache, normalized_img_url, error_msg )
+            continue
+
+        resolved_img_list.append( normalized_img_url )
+
+    if not resolved_img_list :
+        if image_cache is not None and hasattr( image_cache, "put_group_result" ) :
+            image_cache.put_group_result( img_list, [ ], failed_urls, True )
+        _raise_all_images_failed( img_list, failure_errors )
+
+    return resolved_img_list
+
+
 def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> List[ str ] :
     """
     将图片列表转换为base64格式（仅返回转换成功的图片项）。
@@ -228,21 +353,31 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
     if not img_list :
         raise ValueError( "图片 img_list 不能为空!" )
 
-    # 如果没有传入缓存对象，尝试从 dispatcher 获取全局缓存。
-    # 注意：这里必须在函数内导入，避免和 dispatcher 形成循环引用。
-    if image_cache is None :
-        try :
-            from ..dispatcher import ModelDispatcher
+    image_cache = _get_image_cache( image_cache )
 
-            image_cache = ModelDispatcher.get_image_cache()
-        except ImportError :
-            # 如果无法导入，不使用缓存。
-            image_cache = None
+    if image_cache is not None and hasattr( image_cache, "get_group_result" ) :
+        group_result = image_cache.get_group_result( img_list )
+        if group_result :
+            successful_images = group_result.get( "successful_images", [ ] )
+            failed_urls = group_result.get( "failed_urls", [ ] )
+            all_failed = group_result.get( "all_failed", False )
+
+            if successful_images :
+                if failed_urls :
+                    print( f"已从图片组缓存获取可用图片，跳过失败图片 {len(failed_urls)} 张" )
+                else :
+                    print( "已从图片组缓存获取可用图片" )
+                return list( successful_images )
+
+            if all_failed :
+                failure_errors = [ f"已命中图片组失败缓存: {img_url}" for img_url in img_list ]
+                _raise_all_images_failed( img_list, failure_errors )
 
     processed_img_list = [ ]
     successful_conversions = 0
     success_logs = [ ]
     failure_errors = [ ]
+    failed_urls = [ ]
 
     for img_url in img_list :
         # 仅保留转换成功的图片；失败项直接跳过。
@@ -251,7 +386,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             failure_errors.append( f"{img_url}: 图片地址不是字符串" )
             continue
         # 如果已经是 通过 _build_base64_image_url 构建好的 base64 格式 ，就直接添加
-        if img_url.startswith( 'data:image/' ) and ';base64,' in img_url :
+        if _is_base64_image_url( img_url ) :
             processed_img_list.append( img_url )
             successful_conversions += 1
             continue
@@ -272,6 +407,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                     message = f"{message}, 原因: {reason}"
                 print( message )
                 failure_errors.append( message )
+                failed_urls.append( normalized_img_url )
                 continue
 
             # 先查缓存，减少重复下载。
@@ -286,7 +422,9 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"缓存中的base64内容无效，已跳过: {normalized_img_url}, 原因: {error_msg}"
                 print( message )
                 failure_errors.append( message )
+                failed_urls.append( normalized_img_url )
                 _mark_image_conversion_failed( image_cache, normalized_img_url, error_msg )
+                continue
 
         try :
             # 不依赖URL后缀，直接按URL下载并探测真实内容类型。
@@ -295,6 +433,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"转换后, base64_str 为空，: {normalized_img_url}"
                 print( message )
                 failure_errors.append( message )
+                failed_urls.append( normalized_img_url )
                 _mark_image_conversion_failed( image_cache, normalized_img_url, "base64_str 为空" )
                 # processed_img_list.append(img_url)
                 continue
@@ -304,6 +443,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
                 message = f"转换后，base64 验证失败，已跳过: {normalized_img_url}, 原因: {error_msg}"
                 print( message )
                 failure_errors.append( message )
+                failed_urls.append( normalized_img_url )
                 _mark_image_conversion_failed( image_cache, normalized_img_url, error_msg )
                 # processed_img_list.append(img_url)
                 continue
@@ -320,25 +460,22 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
             message = f"图片下载转base64失败: {normalized_img_url}\n{e}"
             print( message )
             failure_errors.append( message )
+            failed_urls.append( normalized_img_url )
             _mark_image_conversion_failed( image_cache, normalized_img_url, str( e ) )
             # processed_img_list.append(img_url)
 
     if successful_conversions == 0 :
-        error_tag = "图片下载转base64失败"
-        error_message = f"所有图片 下载/转换base64 均失败，url：{img_list}"
-        if failure_errors :
-            error_message = f"{error_message}\n" + "\n".join( failure_errors )
-        exception = Exception( error_message )
-        response_error = ResponseError( "", "",
-                                        exception = exception,
-                                        error_tag = error_tag )
-        response_error.skip_report = True
-        raise response_error
+        if image_cache is not None and hasattr( image_cache, "put_group_result" ) :
+            image_cache.put_group_result( img_list, [ ], failed_urls, True )
+        _raise_all_images_failed( img_list, failure_errors )
 
     for success_log in success_logs :
         print( success_log )
     if failure_errors :
         print( f"图片组base64转换部分成功：成功 {successful_conversions} 张，失败 {len(failure_errors)} 张" )
+
+    if image_cache is not None and hasattr( image_cache, "put_group_result" ) :
+        image_cache.put_group_result( img_list, processed_img_list, failed_urls, False )
 
     return processed_img_list
 
