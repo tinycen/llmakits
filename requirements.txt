@@ -4,7 +4,6 @@ pyyaml
 pandas
 openai
 zai-sdk
-dashscope
 filekits
 funcguard
 ollama >= 0.6.0

@@ -22,7 +22,7 @@ setup(
     author='tinycen',
     author_email='sky_ruocen@qq.com',
     description='A powerful Python toolkit for simplifying LLM integration and management with multi-model scheduling, fault tolerance, and load balancing support',
-    keywords='llm, ai, chatgpt, openai, zhipu, dashscope, modelscope, multi-model, scheduling, fault-tolerance',
+    keywords='llm, ai, chatgpt, openai, zhipu, modelscope, multi-model, scheduling, fault-tolerance',
     project_urls={
         'Source': 'https://github.com/tinycen/llmakits',
         'Documentation': 'https://github.com/tinycen/llmakits#readme',

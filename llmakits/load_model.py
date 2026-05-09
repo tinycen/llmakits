@@ -66,7 +66,7 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
     best_specificity = -1  # 匹配特异性评分，越具体的模式评分越高
 
     for _, row in specific_patterns.iterrows():
-        config_model = row['model_name']
+        config_model = str(row['model_name'])
 
         # 跳过精确匹配已经处理过的情况
         if config_model == model_name:
@@ -75,7 +75,7 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
         # 检查模型名称是否匹配（支持通配符）
         if fnmatch(model_name, config_model):
             # 计算特异性：通配符越少，特异性越高
-            specificity = len(config_model) - config_model.count('*')
+            specificity = len(config_model) - config_model.count('*')  # pyright: ignore[reportCallIssue]
             if specificity > best_specificity:
                 best_specificity = specificity
                 best_match = row.to_dict()
