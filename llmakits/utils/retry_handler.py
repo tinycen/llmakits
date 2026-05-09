@@ -14,7 +14,7 @@ from .retry_config import (
     DEFAULT_RETRY_KEYWORDS,
     MIN_LIMIT_ERROR_KEYWORDS,
     DEFAULT_RETRY_API_KEYWORDS,
-    SILENT_ERROR_MESSAGES,
+    SILENT_ERROR_TAGS,
 )
 
 def should_retry_for_rate_limit( error_message: str ) -> bool :
@@ -361,7 +361,7 @@ class RetryHandler :
             if not response_error.skip_report :
                 if error_message :
                     # 只有不在静默列表中的错误才打印提示
-                    if not any( ignored in error_message for ignored in SILENT_ERROR_MESSAGES ) :
+                    if response_error.error_tag not in SILENT_ERROR_TAGS :
                         print( "已提取到报错信息，但未匹配到任何重试场景:" )
                     response_error.report_error( print_tag = True, print_detail = True )
 
