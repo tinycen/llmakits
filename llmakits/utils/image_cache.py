@@ -4,7 +4,7 @@
 """
 
 from collections import OrderedDict
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class ImageBase64Cache:
@@ -115,7 +115,7 @@ class ImageBase64Cache:
         """生成图片组稳定key。"""
         return tuple(img.strip() if isinstance(img, str) else str(img) for img in img_list)
 
-    def get_group_result(self, img_list: List[str]) -> Optional[Dict[str, object]]:
+    def get_group_result(self, img_list: List[str]) -> Optional[Dict[str, Any]]:
         """获取图片组处理结果。"""
         key = self._make_group_key(img_list)
         if key not in self.group_cache:
