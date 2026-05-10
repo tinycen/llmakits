@@ -2,7 +2,6 @@ import httpx
 import pandas as pd
 from typing import Optional, Union, Any, Tuple
 
-from ollama import chat
 from openai import OpenAI
 from zai import ZhipuAiClient
 
@@ -114,19 +113,7 @@ class BaseClient:
             )
             raise response_error
 
-        if self.platform == "ollama":
-            # https://docs.ollama.com/api#generate-request-with-options
-            return chat(
-                messages=messages,
-                model=self.model_name,
-                options={
-                    "temperature": self.temperature,
-                    "top_p": self.top_p,
-                },
-                **self.extra_body,  # 传递额外的参数
-            )
-        else:
-            return self.client.chat.completions.create(
+        return self.client.chat.completions.create(
                 messages=messages,  # type: ignore
                 model=self.model_name,
                 temperature=self.temperature,
@@ -215,13 +202,10 @@ class BaseClient:
                     response_error.skip_report = True
                     raise response_error
         else:
-            if self.platform == "ollama":
-                result = response.message.content
-            else:
-                result = self._extract_response_content(response)
-                usage = getattr(response, "usage", None)
-                if usage is not None:
-                    total_tokens = getattr(usage, "total_tokens", 0)
+            result = self._extract_response_content(response)
+            usage = getattr(response, "usage", None)
+            if usage:
+                total_tokens = getattr(usage, "total_tokens", 0)
 
         return result, total_tokens
 

@@ -5,7 +5,7 @@
 
 from typing import List, Optional, Dict, Any, Tuple
 from urllib.parse import urlparse
-from filekits.base_io import download_encode_base64, batch_download_encode_base64
+from filekits.base_io import download_encode_base64
 from .validator import validate_base64_content, detect_base64_image_mime_type
 from ..utils.normalize_error import ResponseError
 
@@ -21,7 +21,7 @@ def prepare_messages(
     根据提供商名称准备消息格式
 
     Args:
-        provider_name: 提供商名称 ('dashscope', 'zhipu', 'openai', 'modelscope', 'ollama')
+        provider_name: 提供商名称 ('dashscope', 'zhipu', 'openai', 'modelscope')
         system_prompt: 系统提示词
         user_text: 用户文本
         include_img: 是否包含图片
@@ -135,19 +135,6 @@ def _build_content_by_provider(
             system_content = [ { "text" : system_prompt } ]
         else :
             system_content = [ ]
-
-    elif provider_name == "ollama" :
-        if system_prompt :
-            system_content = system_prompt
-        else :
-            system_content = [ ]
-        user_content = user_text
-        try :
-            # todu 这里后续需要修改
-            img_list = batch_download_encode_base64( img_list )
-        except Exception as e :
-            print( f"Ollama图片批量转换base64失败: {e}" )
-            raise Exception( f"图片下载或转换base64失败，url：{img_list}" )
 
     # 兼容通用的 "openai", "modelscope", "openrouter" 格式 , 不支持 zhipu ( 可切换为 zhipu_openai 进行兼容 )
     else :
