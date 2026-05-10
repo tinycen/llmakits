@@ -126,7 +126,7 @@ class BaseClient:
         choices = getattr(response, "choices", None)
         if not choices:
             error_tag = "原始响应中没有choices"
-            exception = IndexError(error_tag)
+            exception = IndexError(str(response))
             response_error = ResponseError(
                 self.platform, self.model_name, exception=exception, error_tag=error_tag
             )
@@ -144,7 +144,7 @@ class BaseClient:
             return delta_content
 
         error_tag = "响应choices中没有message.content或delta.content"
-        exception = AttributeError(error_tag)
+        exception = AttributeError(str(response))
         response_error = ResponseError(
             self.platform, self.model_name, exception=exception, error_tag=error_tag
         )
@@ -161,7 +161,7 @@ class BaseClient:
                 result += content
         if not result:
             error_tag = "流式响应_内容为空"
-            exception = ValueError(error_tag)
+            exception = ValueError(str(response))
             response_error = ResponseError(
                 self.platform, self.model_name, exception=exception, error_tag=error_tag
             )
