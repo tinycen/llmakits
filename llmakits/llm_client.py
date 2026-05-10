@@ -12,48 +12,12 @@ from .message import prepare_request_data
 from funcguard import print_line, timeout_handler
 
 
-# 定义基类
-def process_stream_response(response):
-    result = ""
-    for chunk in response:
-        try:
-            content = _extract_response_content(chunk)
-        except (IndexError, AttributeError, KeyError, TypeError):
-            continue
-        if content:
-            result += content
-    if not result:
-        raise ValueError("流式响应中没有可用content")
-    # 思考：reasoning_chunk = chunk.choices[0].delta.reasoning_content
-    # 回答：answer_chunk = chunk.choices[0].delta.content
-    return result
-
-
 def _get_delta_content(delta: Any) -> Any:
     if delta is None:
         return None
     if isinstance(delta, dict):
         return delta.get("content")
     return getattr(delta, "content", None)
-
-
-def _extract_response_content(response: Any) -> Any:
-    choices = getattr(response, "choices", None)
-    if not choices:
-        raise IndexError("原始响应中没有choices")
-
-    choice = choices[0]
-    message = getattr(choice, "message", None)
-    if message is not None:
-        content = getattr(message, "content", None)
-        if content is not None:
-            return content
-
-    delta_content = _get_delta_content(getattr(choice, "delta", None))
-    if delta_content is not None:
-        return delta_content
-
-    raise AttributeError("响应choices中没有message.content或delta.content")
 
 
 class BaseClient:
@@ -171,6 +135,52 @@ class BaseClient:
                 **self.extra_body,  # 传递额外的参数
             )
 
+    def _extract_response_content(self, response: Any) -> Any:
+        choices = getattr(response, "choices", None)
+        if not choices:
+            error_tag = "原始响应中没有choices"
+            exception = IndexError(error_tag)
+            response_error = ResponseError(
+                self.platform, self.model_name, exception=exception, error_tag=error_tag
+            )
+            raise response_error
+
+        choice = choices[0]
+        message = getattr(choice, "message", None)
+        if message is not None:
+            content = getattr(message, "content", None)
+            if content is not None:
+                return content
+
+        delta_content = _get_delta_content(getattr(choice, "delta", None))
+        if delta_content is not None:
+            return delta_content
+
+        error_tag = "响应choices中没有message.content或delta.content"
+        exception = AttributeError(error_tag)
+        response_error = ResponseError(
+            self.platform, self.model_name, exception=exception, error_tag=error_tag
+        )
+        raise response_error
+
+    def _process_stream_response(self, response):
+        result = ""
+        for chunk in response:
+            try:
+                content = self._extract_response_content(chunk)
+            except ResponseError:
+                continue
+            if content:
+                result += content
+        if not result:
+            error_tag = "流式响应_内容为空"
+            exception = ValueError(error_tag)
+            response_error = ResponseError(
+                self.platform, self.model_name, exception=exception, error_tag=error_tag
+            )
+            raise response_error
+        return result
+
     def _handle_response(
         self,
         response: Any,
@@ -195,7 +205,7 @@ class BaseClient:
             else:
                 try:
                     # 使用 funcguard 处理超时，超时会抛出异常 TimeoutError
-                    result = timeout_handler(process_stream_response, args=(response,), execution_timeout=180)
+                    result = timeout_handler(self._process_stream_response, args=(response,), execution_timeout=180)
                 except Exception as e:
                     if "TimeoutError" in str(e):
                         error_tag = "流式响应_超时"
@@ -208,35 +218,10 @@ class BaseClient:
             if self.platform == "ollama":
                 result = response.message.content
             else:
-
-                if hasattr(response, 'choices') and response.choices:
-                    try:
-                        result = _extract_response_content(response)
-                    except (IndexError, AttributeError, KeyError, TypeError) as e:
-                        error_tag = "响应内容解析失败"
-                        response_error = ResponseError(
-                            self.platform, self.model_name, exception=e, error_tag=error_tag
-                        )
-                        raise response_error
-
-                    usage = getattr(response, "usage", None)
-                    if usage is not None:
-                        total_tokens = getattr(usage, "total_tokens", 0)
-
-                else:
-                    # 保留原有日志，便于问题排查
-                    error_tag = "原始响应中没有choices"
-
-                    # 保持原有语义：如果本身是异常对象，则直接抛出原异常
-                    if isinstance(response, BaseException):
-                        exception = response
-                    else:
-                        exception = Exception(response)
-                    response_error = ResponseError(
-                        self.platform, self.model_name, exception=exception, error_tag=error_tag
-                    )
-
-                    raise response_error
+                result = self._extract_response_content(response)
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    total_tokens = getattr(usage, "total_tokens", 0)
 
         return result, total_tokens
 
