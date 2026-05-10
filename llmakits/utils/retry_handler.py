@@ -363,10 +363,11 @@ class RetryHandler :
         else :
             if not response_error.skip_report :
                 if error_message :
+                    is_silent_error = response_error.error_tag in SILENT_ERROR_TAGS
                     # 只有不在静默列表中的错误才打印提示
-                    if response_error.error_tag not in SILENT_ERROR_TAGS :
+                    if not is_silent_error :
                         print( "已提取到报错信息，但未匹配到任何重试场景:" )
-                    response_error.report_error( print_tag = True, print_detail = True )
+                    response_error.report_error( print_tag = not is_silent_error, print_detail = not is_silent_error )
 
                 else :
                     print( "注意：未提取到报错信息！" )

@@ -187,6 +187,26 @@ class ImageRetryLoggingTest(unittest.TestCase):
         self.assertTrue(resolved_info["img_list"][0].startswith("data:image/jpeg;base64,"))
         self.assertIn("已从图片组缓存获取可用图片", output.getvalue())
 
+    def test_missing_choices_error_is_reported_without_printing_silent_tag(self):
+        handler = RetryHandler("modelscope", "moonshotai/Kimi-K2.5")
+        response_error = ResponseError(
+            "modelscope",
+            "moonshotai/Kimi-K2.5",
+            exception=IndexError("原始响应中没有choices"),
+            error_tag="原始响应中没有choices",
+        )
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            with self.assertRaises(ResponseError):
+                handler.handle_exception(response_error, 0, [], {})
+
+        stdout = output.getvalue()
+        self.assertTrue(response_error.reported)
+        self.assertIn("Model modelscope : moonshotai/Kimi-K2.5", stdout)
+        self.assertNotIn("原始响应中没有choices", stdout)
+        self.assertNotIn("已提取到报错信息，但未匹配到任何重试场景", stdout)
+
     def test_dispatcher_does_not_print_model_header_for_skip_report_image_error(self):
         class FailingModel:
             def send_message(self, messages, message_info):
