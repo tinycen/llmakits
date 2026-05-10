@@ -145,8 +145,6 @@ class ModelDispatcher:
             )
             # print_line(".")
             self.logger.debug(next_base_model_info)
-            # 标记下一个模型的信息已打印
-            printed_model_indices.add(next_idx)
 
     @staticmethod
     def _should_stop_model_fallback(response_error: ResponseError, error_message: str) -> bool:
@@ -254,14 +252,14 @@ class ModelDispatcher:
                     is_valid, validated_value = validate_func(return_message)
 
                     if is_valid:
-                        if validated_value:
-                            if return_detailed:
-                                return ExecutionResult(
-                                    return_message=validated_value,
-                                    total_tokens=total_tokens,
-                                    success=True,
-                                )
-                            return validated_value, total_tokens
+                        if return_detailed:
+                            return ExecutionResult(
+                                return_message=validated_value,
+                                total_tokens=total_tokens,
+                                last_tried_index=idx,
+                                success=True,
+                            )
+                        return validated_value, total_tokens
                     else:
                         content = "输出结果：条件校验失败, trying next model ..."
                         # 只有当当前模型信息未被打印过时才打印
@@ -279,6 +277,7 @@ class ModelDispatcher:
                     return ExecutionResult(
                         return_message=return_message,
                         total_tokens=total_tokens,
+                        last_tried_index=idx,
                         success=True,
                     )
                 return return_message, total_tokens

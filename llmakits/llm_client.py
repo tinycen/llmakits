@@ -16,10 +16,44 @@ from funcguard import print_line, timeout_handler
 def process_stream_response(response):
     result = ""
     for chunk in response:
-        result += chunk.choices[0].delta.content
+        try:
+            content = _extract_response_content(chunk)
+        except (IndexError, AttributeError, KeyError, TypeError):
+            continue
+        if content:
+            result += content
+    if not result:
+        raise ValueError("流式响应中没有可用content")
     # 思考：reasoning_chunk = chunk.choices[0].delta.reasoning_content
     # 回答：answer_chunk = chunk.choices[0].delta.content
     return result
+
+
+def _get_delta_content(delta: Any) -> Any:
+    if delta is None:
+        return None
+    if isinstance(delta, dict):
+        return delta.get("content")
+    return getattr(delta, "content", None)
+
+
+def _extract_response_content(response: Any) -> Any:
+    choices = getattr(response, "choices", None)
+    if not choices:
+        raise IndexError("原始响应中没有choices")
+
+    choice = choices[0]
+    message = getattr(choice, "message", None)
+    if message is not None:
+        content = getattr(message, "content", None)
+        if content is not None:
+            return content
+
+    delta_content = _get_delta_content(getattr(choice, "delta", None))
+    if delta_content is not None:
+        return delta_content
+
+    raise AttributeError("响应choices中没有message.content或delta.content")
 
 
 class BaseClient:
@@ -91,6 +125,8 @@ class BaseClient:
                         )
                         response_error.skip_report = True
                         raise response_error
+                    api_retry_count = 0
+                    continue
 
                 if should_retry:
                     api_retry_count += 1
@@ -175,13 +211,17 @@ class BaseClient:
 
                 if hasattr(response, 'choices') and response.choices:
                     try:
-                        result = response.choices[0].message.content
-                    except:
-                        # self.platform == "gitcode"，部分情况适用
-                        result = response.choices[0].delta["content"]
+                        result = _extract_response_content(response)
+                    except (IndexError, AttributeError, KeyError, TypeError) as e:
+                        error_tag = "响应内容解析失败"
+                        response_error = ResponseError(
+                            self.platform, self.model_name, exception=e, error_tag=error_tag
+                        )
+                        raise response_error
 
-                    if response.usage is not None:
-                        total_tokens = response.usage.total_tokens
+                    usage = getattr(response, "usage", None)
+                    if usage is not None:
+                        total_tokens = getattr(usage, "total_tokens", 0)
 
                 else:
                     # 保留原有日志，便于问题排查

@@ -29,7 +29,7 @@ def is_image_error( error_message: str ) -> bool :
 
 def should_retry_for_image_error( error_message: str, message_config: Dict ) -> bool :
     """判断是否因为图片错误而重试"""
-    return is_image_error( error_message ) and message_config[ "include_img" ]
+    return is_image_error( error_message ) and message_config.get( "include_img", False )
 
 
 class RetryHandler :
@@ -234,8 +234,9 @@ class RetryHandler :
         """
         print( f"请求被限流 或者 网络连接失败，正在第 {api_retry_count + 1} 次重试……" )
         # 如果图片：下载或读取 出现问题
-        if any( keyword in error_message for keyword in IMAGE_DOWNLOAD_ERROR_KEYWORDS ) and message_config[
-            "include_img" ] :
+        if any( keyword in error_message for keyword in IMAGE_DOWNLOAD_ERROR_KEYWORDS ) and message_config.get(
+            "include_img", False
+        ) :
 
             img_list = message_config[ "img_list" ]
             if api_retry_count < 2 :
