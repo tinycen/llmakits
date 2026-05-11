@@ -25,7 +25,7 @@ class ResponseError( Exception ) :
 
 
     # 打印报错信息
-    def report_error( self, print_tag = True ) :
+    def report_error( self, print_tag = True, print_message = True ) :
         if self.skip_report or self.reported :
             return
 
@@ -35,7 +35,8 @@ class ResponseError( Exception ) :
         if print_tag and self.error_tag and self.error_tag not in ["响应超时"]:
             print( self.error_tag )
 
-        print( self.error_message )
+        if print_message :
+            print( self.error_message )
 
         self.reported = True
 

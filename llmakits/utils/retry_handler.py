@@ -64,7 +64,7 @@ class RetryHandler :
         if self.api_key_error_reported :
             return
 
-        response_error.report_error( print_tag = False )
+        response_error.report_error( print_tag = False, print_message = False )
         self.api_key_error_reported = True
 
 
@@ -344,14 +344,14 @@ class RetryHandler :
 
         # 判断是否应该重试
         if should_retry_for_rate_limit( error_message ) :
-            response_error.report_error( print_tag = False )
+            response_error.report_error( print_tag = False, print_message = False )
             should_retry, updated_messages = self.handle_rate_limit_error(
                 error_message, api_retry_count, messages, message_config
             )
             return should_retry, updated_messages, False
 
         elif should_retry_for_image_error( error_message, message_config ) :
-            response_error.report_error( print_tag = False )
+            response_error.report_error( print_tag = False, print_message = False )
             should_retry, updated_messages = self.handle_image_error( message_config )
             return should_retry, updated_messages, False
 
