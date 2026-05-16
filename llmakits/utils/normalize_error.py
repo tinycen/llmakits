@@ -32,7 +32,7 @@ class ResponseError( Exception ) :
         print_line()
         print( self.base_model_info )
 
-        if print_tag and self.error_tag and self.error_tag not in ["响应超时"]:
+        if print_tag and self.error_tag:
             print( self.error_tag )
 
         if print_message :

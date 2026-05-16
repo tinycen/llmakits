@@ -66,7 +66,7 @@ class BaseClient:
 
                 if not isinstance(e, ResponseError):
                     if "TimeoutError" in str(e):
-                        error_tag = "响应超时"
+                        error_tag = "TimeoutError"
                     else:
                         error_tag = "响应异常"
                     response_error = ResponseError(self.platform, self.model_name, exception=e, error_tag=error_tag)

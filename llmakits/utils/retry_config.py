@@ -64,5 +64,6 @@ DEFAULT_RETRY_API_KEYWORDS = [
 
 # 静默的错误标签列表（匹配 error_tag，只有不在静默列表中的错误才打印提示）
 SILENT_ERROR_TAGS = [
+    "TimeoutError",
     "原始响应中没有choices",
 ]
