@@ -128,7 +128,29 @@ models = load_models(
 my_models = models['my_models']
 ```
 
-### 3. 发送消息（多模型调度）
+### 3. 加载提示词
+
+使用 `PromptManager` 管理提示词模板，支持从指定文件夹批量加载 `.md` 格式的提示词文件。
+
+```python
+from llmakits import PromptManager
+
+# 初始化（加载基础提示词 + 指定子文件夹）
+prompt_manager = PromptManager('prompts', subfolder_name='e_commerce')
+
+# 获取提示词
+title_prompt = prompt_manager.get_prompt('generate_title')
+
+# 在业务中使用
+message_info = {
+    "system_prompt": title_prompt,
+    "user_text": "请为这款无线蓝牙耳机生成标题"
+}
+```
+
+详细使用说明请参考 [doc/prompt_manager.md](doc/prompt_manager.md)。
+
+### 4. 发送消息（多模型调度）
 
 #### 使用 ModelDispatcher（推荐）
 
