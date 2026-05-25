@@ -32,6 +32,7 @@ DEFAULT_RETRY_KEYWORDS = [
     "Requests rate limit exceeded, please try again later",
     "Free credits temporarily have rate limits",  # vercel
     "experiencing high traffic right now! Please try again soon",  # cerebras
+    "on tokens per minute",  # groq
 ]
 
 DEFAULT_RETRY_KEYWORDS.extend(MIN_LIMIT_ERROR_KEYWORDS)
