@@ -184,6 +184,7 @@ print(f"模型切换次数: {dispatcher.model_switch_count}")
 - `user_text`: 用户输入文本（可选）
 - `include_img`: 是否包含图片（可选，默认False）
 - `img_list`: 图片URL列表（可选，默认为空列表）
+- `debug`: 是否启用调试模式（可选，默认False），启用后异常时会触发断点
 
 基本使用示例：
 
@@ -228,6 +229,7 @@ result, tokens = dispatcher.execute_task(message_info, my_models)
 - [获取详细执行结果](doc/dispatcher_advanced.md#获取详细执行结果)
 - [耗时警告监控](doc/dispatcher_advanced.md#耗时警告监控)
 - [指定起始模型索引](doc/dispatcher_advanced.md#指定起始模型索引)
+- [调试模式](doc/dispatcher_advanced.md#调试模式)
 
 #### 增强版调度策略：dispatcher_with_repair
 

@@ -1,7 +1,7 @@
 import httpx
 import pandas as pd
 from typing import Optional, Union, Any, Tuple
-
+from .utils.debug_utils import trigger_breakpoint
 from openai import OpenAI
 from zai import ZhipuAiClient
 
@@ -30,6 +30,7 @@ class BaseClient:
         self.stream_real = False  # 是否真的流式输出
         self.client: Optional[Union[OpenAI, ZhipuAiClient]] = None  # 由子类初始化
         self.extra_body = {}  # 额外的参数
+        self.debug = False
 
         # 初始化重试处理器
         self.retry_handler = RetryHandler(self.platform, self.model_name)
@@ -40,6 +41,7 @@ class BaseClient:
 
     def send_message(self, messages, message_info=None):
         """发送消息的主方法"""
+        debug = bool(self.debug) or bool((message_info or {}).get("debug", False))
         if message_info is not None:
             message_info = self.retry_handler.preprocess_message_info(message_info)
 
@@ -63,6 +65,9 @@ class BaseClient:
                 return result, total_tokens
 
             except Exception as e:
+                if debug:
+                    trigger_breakpoint(e)
+                    raise
 
                 if not isinstance(e, ResponseError):
                     if "TimeoutError" in str(e):

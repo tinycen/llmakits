@@ -2,6 +2,7 @@
 模型调度器 - 支持索引控制和详细状态返回
 """
 
+from .utils.debug_utils import trigger_breakpoint
 from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
 from funcguard import print_line, time_monitor, setup_logger
 from filekits.base_io import save_json
@@ -36,6 +37,7 @@ class ModelDispatcher:
         models_config: Optional[Union[str, Dict[str, Any]]] = None,
         model_keys: Optional[Union[str, Dict[str, Any]]] = None,
         global_config: Optional[Union[str, Dict[str, Any]]] = None,
+        debug: bool = False,
     ):
         self.model_switch_count = 0
         self.exhausted_models = []
@@ -43,6 +45,7 @@ class ModelDispatcher:
         self._retry_fail_count: Dict[str, int] = {}  # 记录模型达到最大重试次数的错误计数
         self.warning_time = None  # 用于 显示超时警告的阈值，单位秒
         self.logger = setup_logger("dispatcher")  # 新增：日志记录器
+        self.debug = debug
 
         if models_config and model_keys:
             self.model_groups, self.model_keys = load_models(models_config, model_keys, global_config)
@@ -192,6 +195,11 @@ class ModelDispatcher:
         # 用于跟踪已打印过"下一个模型"信息的模型索引
         printed_model_indices = set()
 
+        debug_mode = bool(self.debug) or bool((message_info or {}).get("debug", False))
+        message_info_to_use = dict(message_info or {})
+        if debug_mode:
+            message_info_to_use["debug"] = True
+
         # 从指定索引开始遍历
         for idx in range(start_index, models_num):
             model_info = llm_models[idx]
@@ -211,7 +219,7 @@ class ModelDispatcher:
                         0,  # 0：不打印警告信息
                         model_info["model"].send_message,
                         [],
-                        message_info,
+                        message_info_to_use,
                     )
                     return_message, total_tokens = result
                     if total_seconds > self.warning_time:
@@ -219,12 +227,15 @@ class ModelDispatcher:
                         log_content = f"{base_model_info}\n{content}"
                         self.logger.warning(log_content)
                 else:
-                    return_message, total_tokens = model_info["model"].send_message([], message_info)
+                    return_message, total_tokens = model_info["model"].send_message([], message_info_to_use)
 
                 if format_json:
                     try:
                         return_message = convert_to_json(return_message)
                     except Exception as json_error:
+                        if debug_mode:
+                            trigger_breakpoint(json_error)
+                            raise
                         response_error = ResponseError(sdk_name, model_name, exception=json_error, error_tag="")
 
                         if return_detailed:
@@ -283,6 +294,9 @@ class ModelDispatcher:
                 return return_message, total_tokens
 
             except Exception as e:
+                if debug_mode:
+                    trigger_breakpoint(e)
+                    raise
                 if not isinstance(e, ResponseError):
                     response_error = ResponseError(sdk_name, model_name, exception=e, error_tag="")
                 else:

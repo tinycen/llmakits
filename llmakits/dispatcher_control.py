@@ -14,11 +14,10 @@ JSON 错误 → 继续下一个模型
 
 from .dispatcher import ModelDispatcher
 from typing import Dict, Any, Optional, Callable
+from .utils.debug_utils import trigger_breakpoint
 from funcguard import print_line, print_block
 from .utils.normalize_error import ResponseError
 from .utils.model_fallback import should_stop_model_fallback
-
-
 
 
 def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) -> tuple[str, str, int]:
@@ -120,6 +119,11 @@ def dispatcher_with_repair(
         if not dispatcher.model_groups.get(fix_json_config["group_name"]):
             raise ValueError(f"调度器中未找到 修复模型组: {fix_json_config['group_name']}")
 
+    debug_mode = bool(getattr(dispatcher, "debug", False)) or bool((message_info or {}).get("debug", False))
+    if debug_mode:
+        message_info = dict(message_info or {})
+        message_info["debug"] = True
+
     current_index = 0
 
     while True:
@@ -184,6 +188,8 @@ def dispatcher_with_repair(
                 '''
 
             repair_message_info = {"user_text": user_text, "system_prompt": fix_json_system_prompt}
+            if debug_mode:
+                repair_message_info["debug"] = True
             try:
                 # 开始执行修复
                 repair_result = dispatcher.execute_with_group(
@@ -219,6 +225,9 @@ def dispatcher_with_repair(
                     # 如果没有验证函数，直接返回修复结果
                     return fixed_message, repair_tokens
             except Exception as e:
+                if debug_mode:
+                    trigger_breakpoint(e)
+                    raise
                 current_model_info = _print_current_model_info(dispatcher, group_name, current_index)
                 print_line("=")
                 print(current_model_info)

@@ -120,3 +120,72 @@ result, tokens = dispatcher.execute_with_group(
 print(f"结果: {result}")
 print(f"使用token数: {tokens}")
 ```
+
+## 调试模式
+
+调试模式用于在开发和调试过程中快速定位问题。启用后，当遇到异常时会触发断点，而不是继续尝试下一个模型。
+
+### 启用方式
+
+#### 方式一：通过 ModelDispatcher 参数
+
+```python
+from llmakits import ModelDispatcher
+
+# 创建调度器时启用调试模式
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml', debug=True)
+
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言"
+}
+
+# 执行任务 - 异常时会触发断点
+result, tokens = dispatcher.execute_with_group(message_info, group_name="generate_title")
+```
+
+#### 方式二：通过 message_info 参数
+
+```python
+from llmakits import ModelDispatcher
+
+dispatcher = ModelDispatcher('config/models_config.yaml', 'config/keys_config.yaml')
+
+# 在 message_info 中启用调试模式
+message_info = {
+    "system_prompt": "你是一个 helpful 助手",
+    "user_text": "请介绍一下Python编程语言",
+    "debug": True  # 启用调试模式
+}
+
+result, tokens = dispatcher.execute_with_group(message_info, group_name="generate_title")
+```
+
+#### 方式三：通过环境变量
+
+设置环境变量 `LLMAKITS_BREAKPOINT` 为以下值之一：`1`, `true`, `yes`, `y`, `on`
+
+```bash
+# Windows PowerShell
+$env:LLMAKITS_BREAKPOINT="true"
+
+# Linux/Mac
+export LLMAKITS_BREAKPOINT=true
+```
+
+#### 方式四：通过调试器
+
+当检测到有调试器运行时（`sys.gettrace()` 不为 `None`），调试模式会自动启用。
+
+### 调试模式行为
+
+1. **触发断点**: 遇到异常时，程序会在异常处暂停，方便检查变量状态和调用栈
+2. **异常传播**: 触发断点后，异常会重新抛出，而不是被静默处理
+3. **适用范围**: 调试模式适用于 `ModelDispatcher`、`dispatcher_with_repair` 和 `BaseClient`
+
+### 使用场景
+
+- 开发阶段快速定位模型调用失败的原因
+- 调试 JSON 格式化错误
+- 排查网络请求超时问题
+- 分析 API 密钥相关错误
