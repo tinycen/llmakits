@@ -367,7 +367,10 @@ class RetryHandler :
                     # 只有不在静默列表中的错误才打印提示
                     if not is_silent_error :
                         print( "已提取到报错信息，但未匹配到任何重试场景:" )
-                    response_error.report_error( print_tag = not is_silent_error )
+                    response_error.report_error(
+                        print_tag = not is_silent_error,
+                        print_message = not is_silent_error,
+                    )
 
                 else :
                     print( "注意：未提取到报错信息！" )

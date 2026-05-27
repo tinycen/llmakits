@@ -238,6 +238,62 @@ class ImageRetryLoggingTest(unittest.TestCase):
             output.getvalue(),
         )
 
+    def test_dispatcher_raises_all_models_failed_after_last_fallback_error(self):
+        class FailingModel:
+            def __init__(self, error_message):
+                self.error_message = error_message
+
+            def send_message(self, messages, message_info):
+                raise ResponseError(
+                    "vercel",
+                    self.error_message,
+                    exception=Exception(self.error_message),
+                    error_tag="响应异常",
+                )
+
+        dispatcher = ModelDispatcher()
+        llm_models = [
+            {"sdk_name": "vercel", "model_name": "openai/gpt-5-mini", "model": FailingModel("first failed")},
+            {"sdk_name": "vercel", "model_name": "google/gemini-3-flash", "model": FailingModel("last failed")},
+        ]
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            with self.assertRaises(ResponseError) as context:
+                dispatcher.execute_task({"user_text": "x", "system_prompt": ""}, llm_models)
+
+        error_message = context.exception.get_error_message()
+        self.assertIn("All models failed", error_message)
+        self.assertIn("last failed", error_message)
+
+    def test_dispatcher_return_detailed_reports_all_models_failed(self):
+        class FailingModel:
+            def send_message(self, messages, message_info):
+                raise ResponseError(
+                    "vercel",
+                    "google/gemini-3-flash",
+                    exception=Exception("last failed"),
+                    error_tag="响应异常",
+                )
+
+        dispatcher = ModelDispatcher()
+        llm_models = [
+            {"sdk_name": "vercel", "model_name": "google/gemini-3-flash", "model": FailingModel()},
+        ]
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = dispatcher.execute_task(
+                {"user_text": "x", "system_prompt": ""},
+                llm_models,
+                return_detailed=True,
+            )
+
+        self.assertFalse(result.success)
+        self.assertIsInstance(result.error, ResponseError)
+        self.assertIn("All models failed", result.error.get_error_message())
+        self.assertEqual(0, result.last_tried_index)
+
 
 if __name__ == "__main__":
     unittest.main()

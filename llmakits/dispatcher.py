@@ -154,6 +154,19 @@ class ModelDispatcher:
         """判断是否应停止模型切换并立即抛出异常。"""
         return should_stop_model_fallback(response_error, error_message)
 
+    @staticmethod
+    def _build_all_models_failed_error(response_error: ResponseError) -> ResponseError:
+        """构建最终失败异常，同时保留最后一个模型的具体错误。"""
+        last_error_message = response_error.get_error_message()
+        exception = Exception(f"All models failed. Last error: {last_error_message}")
+        all_failed_error = ResponseError(
+            response_error.platform,
+            response_error.model_name,
+            exception=exception,
+            error_tag="All models failed",
+        )
+        return all_failed_error
+
     # 执行任务 - 多模型调度器支持故障转移和重试
     def execute_task(
         self,
@@ -352,9 +365,10 @@ class ModelDispatcher:
                     continue
                 else:
                     # 最后一个模型也失败了
+                    all_failed_error = self._build_all_models_failed_error(response_error)
                     if return_detailed:
-                        return ExecutionResult(success=False, error=response_error, last_tried_index=idx)
-                    raise response_error
+                        return ExecutionResult(success=False, error=all_failed_error, last_tried_index=idx)
+                    raise all_failed_error
 
         # 如果所有模型都失败（理论上不会到这里）
         error = Exception("All models failed.")
