@@ -57,6 +57,7 @@ DEFAULT_RETRY_API_KEYWORDS = [
     # 模型不存在或没有访问权限
     "not supported",  # openrouter
     "does not exist or you do not have access to it",  # cerebras_openai
+    "do not have access",  # vercel
     "no provider supported",  # modelscope
     "not found for API version v1main",  # gemini
     "Invalid model id",  # gitcode
