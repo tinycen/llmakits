@@ -148,6 +148,7 @@ class ModelDispatcher:
             )
             # print_line(".")
             self.logger.debug(next_base_model_info)
+            printed_model_indices.add(next_idx)
 
     @staticmethod
     def _should_stop_model_fallback(response_error: ResponseError, error_message: str) -> bool:
@@ -239,6 +240,7 @@ class ModelDispatcher:
                         content = f"Time-consuming: execute_task took {total_seconds}s"
                         log_content = f"{base_model_info}\n{content}"
                         self.logger.warning(log_content)
+                        printed_model_indices.add(idx)
                 else:
                     return_message, total_tokens = model_info["model"].send_message([], message_info_to_use)
 
@@ -265,6 +267,7 @@ class ModelDispatcher:
                             # 只有当当前模型信息未被打印过时才打印
                             if idx not in printed_model_indices:
                                 print(base_model_info, content, sep="\n")
+                                printed_model_indices.add(idx)
                             else:
                                 print(content)
                             self.model_switch_count += 1
@@ -289,6 +292,7 @@ class ModelDispatcher:
                         # 只有当当前模型信息未被打印过时才打印
                         if idx not in printed_model_indices:
                             print(base_model_info, content, sep="\n")
+                            printed_model_indices.add(idx)
                         else:
                             print(content)
                         self.model_switch_count += 1
@@ -323,6 +327,7 @@ class ModelDispatcher:
                 ):
                     print_line("=")
                     print(base_model_info)
+                    printed_model_indices.add(idx)
 
                 error_message = response_error.get_error_message()
                 if self._should_stop_model_fallback(response_error, error_message):

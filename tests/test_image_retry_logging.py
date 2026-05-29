@@ -294,6 +294,36 @@ class ImageRetryLoggingTest(unittest.TestCase):
         self.assertIn("All models failed", result.error.get_error_message())
         self.assertEqual(0, result.last_tried_index)
 
+    def test_dispatcher_does_not_reprint_model_header_after_next_model_log(self):
+        class InvalidModel:
+            def send_message(self, messages, message_info):
+                return "invalid", 0
+
+        def always_invalid(return_message):
+            return False, return_message
+
+        dispatcher = ModelDispatcher()
+        llm_models = [
+            {"sdk_name": "openrouter", "model_name": "first-model", "model": InvalidModel()},
+            {"sdk_name": "modelscope", "model_name": "second-model", "model": InvalidModel()},
+        ]
+
+        output = io.StringIO()
+        with patch.object(dispatcher.logger, "debug") as debug_log:
+            with redirect_stdout(output):
+                with self.assertRaises(Exception):
+                    dispatcher.execute_task(
+                        {"user_text": "x", "system_prompt": ""},
+                        llm_models,
+                        validate_func=always_invalid,
+                    )
+
+        stdout = output.getvalue()
+        self.assertIn("1/2 Model openrouter : first-model", stdout)
+        self.assertNotIn("2/2 Model modelscope : second-model", stdout)
+        self.assertEqual(2, stdout.count("输出结果：条件校验失败, trying next model ..."))
+        debug_log.assert_called_once_with("Next model : \n2/2 Model modelscope : second-model")
+
 
 if __name__ == "__main__":
     unittest.main()
