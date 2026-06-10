@@ -25,6 +25,7 @@ MIN_LIMIT_ERROR_KEYWORDS = [
 DEFAULT_RETRY_KEYWORDS = [
     "Too many requests",
     "频繁操作，请稍后重试",  # gitcode
+    "Please retry shortly",  # openrouter
     "Request rate increased too quickly",  # modelscope
     "模型当前访问量过大",  # zhipu
     "Allocated quota exceeded, please increase your quota limit",
