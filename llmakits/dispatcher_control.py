@@ -33,7 +33,6 @@ def _get_model_info(dispatcher: ModelDispatcher, group_name: str, index: int) ->
         (sdk名称, 模型名称, 模型总数)
     """
     llm_models = dispatcher.model_groups.get(group_name, [])
-    _ = len(llm_models)
 
     if index < len(llm_models):
         model_info = llm_models[index]

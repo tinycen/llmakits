@@ -84,6 +84,7 @@ def generate_title(
         return True, best_title
 
     best_title = title
+    try_max_length = max_length  # 在循环前初始化
     for attempt in range(1, max_attempts + 1):
 
         print(f"第 {attempt} 次修改中……")

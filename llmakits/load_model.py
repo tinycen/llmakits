@@ -91,6 +91,17 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
     return None
 
 
+def _parse_bool_string(value: Any) -> Any:
+    """解析布尔值字符串，支持多种字符串格式"""
+    if isinstance(value, str):
+        normalized = value.strip().strip('"\'')  # type: ignore[reportUnknownMemberType]
+        if normalized.lower() in ('true', '1', 'yes'):
+            return True
+        if normalized.lower() in ('false', '0', 'no'):
+            return False
+    return value
+
+
 def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     解析模型配置，构建extra_body等参数
@@ -116,12 +127,7 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
             continue
 
         # 标准化布尔值：处理带引号的字符串格式
-        if isinstance(value, str):
-            str_value = value.strip()
-            if str_value == '"""True"""' or str_value == '"True"' or str_value == 'True':
-                value = True
-            elif str_value == '"""False"""' or str_value == '"False"' or str_value == 'False':
-                value = False
+        value = _parse_bool_string(value)
 
         # platform和model_name字段不添加到参数中（仅用于匹配）
         if key in ('platform', 'model_name'):
