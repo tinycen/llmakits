@@ -58,7 +58,7 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
     # 1. 首先尝试精确匹配
     exact_match = platform_configs[platform_configs['model_name'] == model_name]
     if not exact_match.empty:
-        return exact_match.iloc[0].to_dict()
+        return exact_match.iloc[0].to_dict()    # pyright: ignore[reportReturnType]
 
     # 2. 尝试具体通配符匹配（非*的通配符模式）
     specific_patterns = platform_configs[platform_configs['model_name'] != '*']
@@ -81,12 +81,12 @@ def find_model_config(global_config: pd.DataFrame, platform: str, model_name: st
                 best_match = row.to_dict()
 
     if best_match:
-        return best_match
+        return best_match   # pyright: ignore[reportReturnType]
 
     # 3. 最后尝试通用通配符匹配 (*)
     universal_match = platform_configs[platform_configs['model_name'] == '*']
     if not universal_match.empty:
-        return universal_match.iloc[0].to_dict()
+        return universal_match.iloc[0].to_dict()    # pyright: ignore[reportReturnType]
 
     return None
 
