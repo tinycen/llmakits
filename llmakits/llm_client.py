@@ -8,7 +8,7 @@ from zai import ZhipuAiClient
 from .utils.retry_handler import RetryHandler
 from .utils.normalize_error import ResponseError
 from .message import prepare_request_data
-from funcguard import print_line, timeout_handler
+from funcguard import timeout_handler
 
 
 def _get_delta_content(delta: Any) -> Any:

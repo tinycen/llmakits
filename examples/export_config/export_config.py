@@ -23,7 +23,7 @@ def main():
     # 导出为JSON文件
     print("导出为JSON文件...")
     if dispatcher.export_config():
-        print(f"✓ 基本导出成功")
+        print("✓ 基本导出成功")
 
 
 if __name__ == "__main__":

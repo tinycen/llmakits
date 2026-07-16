@@ -322,7 +322,7 @@ class ModelDispatcher:
                 # 只有当当前模型信息未被打印过时才打印
                 if (
                     idx not in printed_model_indices
-                    and response_error.reported == False
+                    and not response_error.reported
                     and not response_error.skip_report
                 ):
                     print_line("=")
@@ -355,10 +355,10 @@ class ModelDispatcher:
                         self.logger.error(f"{model_key} 已3次 触发 超时/重试，已从模型组中移除这个模型")
                 else:
                     # 打印详细的错误信息
-                    if response_error.reported == False and not response_error.skip_report:
+                    if not response_error.reported and not response_error.skip_report:
                         self.logger.error(f"错误详情: {response_error.error_tag}\n{error_msg}")
 
-                if response_error.reported == False and not response_error.skip_report:
+                if not response_error.reported and not response_error.skip_report:
                     print_line("=")
                     response_error.reported = True
 

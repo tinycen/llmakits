@@ -119,7 +119,9 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     params = {}
     extra_body = {}  # 直接传递给API的参数
-    extra_body_nested = {}  # 需要嵌套在extra_body中的参数
+    # 某些 OpenAI 兼容端点要求 ``extra_body.extra_body``；例如
+    # ModelScope/DashScope 的 ``enable_thinking``。这不是重复键。
+    extra_body_nested = {}
 
     for key, value in config_dict.items():
         # 跳过空值
@@ -167,7 +169,7 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
     # 组合最终的extra_body结构
     if extra_body_nested:
         if extra_body:
-            # 两种都有，需要合并
+            # 保留 API 所需的双层结构，同时传递顶层扩展参数。
             params['extra_body'] = {**extra_body, "extra_body": extra_body_nested}
         else:
             # 只有嵌套参数

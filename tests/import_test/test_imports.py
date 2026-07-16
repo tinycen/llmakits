@@ -9,7 +9,7 @@ import sys
 import importlib
 import traceback
 from pathlib import Path
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any
 
 
 class ImportTester:
@@ -141,7 +141,6 @@ class ImportTester:
 
             # 尝试获取导入项
             if hasattr(module, item_name):
-                item = getattr(module, item_name)
                 result['success'] = True
             else:
                 result['error'] = f"模块 {module_path} 中没有找到 {item_name}"
@@ -193,7 +192,7 @@ class ImportTester:
                 all_results.append(result)
 
                 if result['success']:
-                    print(f"      ✅ 成功")
+                    print("      ✅ 成功")
                 else:
                     failed_tests += 1
                     print(f"      ❌ 失败: {result['error']}")

@@ -3,8 +3,9 @@
 负责处理消息内容的格式化和解析
 """
 
-import re
 import json
+import ast
+import re
 from typing import Any, Union, Tuple
 
 
@@ -87,25 +88,25 @@ def convert_to_json(text: str) -> Any:
 
         try:
             if processed_text.startswith("```json"):
-                processed_text = processed_text.strip("```json\n")
+                processed_text = processed_text.removeprefix("```json").removesuffix("```").strip()
 
             # 首先尝试直接解析JSON
             converted_json = json.loads(processed_text)
         except json.JSONDecodeError:
             try:
-                # 尝试使用eval作为备选方案（谨慎使用）
-                converted_json = eval(processed_text)
-            except:
-                # 如果eval也失败，尝试提取JSON字符串
+                # 兼容 Python 字面量表示，但绝不执行模型返回的代码。
+                converted_json = ast.literal_eval(processed_text)
+            except (ValueError, SyntaxError):
+                # 如果字面量解析失败，尝试提取 JSON 代码块。
                 try:
                     extracted_json = extract_json_from_string(processed_text)
                     if extracted_json:
                         converted_json = json.loads(extracted_json)
-                except:
-                    pass
+                except (ValueError, json.JSONDecodeError):
+                    converted_json = None
 
         if converted_json is not None:
-            if "answer" in converted_json:  # zhipu 'glm-4-flash-250414' 模型会返回 answer 字段
+            if isinstance(converted_json, dict) and "answer" in converted_json:  # zhipu 'glm-4-flash-250414' 模型会返回 answer 字段
                 answer = converted_json["answer"]
                 if isinstance(answer, (dict, list)):
                     return answer

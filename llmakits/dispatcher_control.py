@@ -252,4 +252,4 @@ def dispatcher_with_repair(
             error_to_raise = result.error if result.error is not None else Exception("All models failed")
             raise error_to_raise
 
-    raise Exception(f"所有模型均尝试失败")
+    raise Exception("所有模型均尝试失败")

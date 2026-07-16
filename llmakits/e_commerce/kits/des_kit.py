@@ -36,7 +36,7 @@ def generate_html(
                 if chinese_count > 5:
                     return False, None
                 else:
-                    print(f"移除中文字符……")
+                    print("移除中文字符……")
                     html_string = remove_chinese(html_string)
         des_html = validate_html_fix(dispatcher, html_string, allowed_tags, fix_group, fix_prompt)  # type: ignore
         return True, des_html
