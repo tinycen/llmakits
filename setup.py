@@ -1,4 +1,8 @@
+from pathlib import Path
 from setuptools import setup, find_packages
+
+# 版本号统一由 llmakits/.version 维护，setup.py 与 __init__.py 均从此读取
+__version__ = (Path(__file__).resolve().parent / "llmakits" / ".version").read_text(encoding="utf-8").strip()
 
 # 读取README文件
 try:
@@ -16,7 +20,7 @@ except FileNotFoundError:
 
 setup(
     name='llmakits',
-    version='0.6.68',
+    version=f'v{__version__}',
     packages=find_packages(),
     install_requires=install_requires,
     author='tinycen',
@@ -52,5 +56,10 @@ setup(
         ],
     },
     include_package_data=True,
+    package_data={
+        "llmakits": [
+            ".version",
+        ]
+    },
     zip_safe=False,
 )
