@@ -17,11 +17,11 @@
 - 📊 **消息处理**: 强大的消息格式化、结果验证和提取功能；
 - 🛡️ **错误处理**: 完善的LLM重试机制和异常处理；
 - 🎯 **电商工具**: 内置电商场景专用工具集，提供带验证器的闭环工作流；
-  - [标题生成](doc/e_commerce.md#优化商品标题)：支持长度/单词数约束检查，不合格自动修改，支持程序化缩减；
-  - [类目预测](doc/e_commerce.md#预测商品类目)：支持直接预测和逐级预测两种模式，带JSON格式修复和结果验证；
-  - [属性填充](doc/e_commerce.md#填充属性值)：支持从候选值中自动验证并填充商品属性；
-  - [HTML生成](doc/e_commerce.md#生成html商品描述)：自动生成商品描述HTML，自动检测并修复非法标签，支持中文过滤；
-  - [选项翻译](doc/e_commerce.md#翻译商品选项)：支持商品选项多语言翻译，自动验证返回列表长度一致性；
+  - [标题生成](docs/e_commerce.md#优化商品标题)：支持长度/单词数约束检查，不合格自动修改，支持程序化缩减；
+  - [类目预测](docs/e_commerce.md#预测商品类目)：支持直接预测和逐级预测两种模式，带JSON格式修复和结果验证；
+  - [属性填充](docs/e_commerce.md#填充属性值)：支持从候选值中自动验证并填充商品属性；
+  - [HTML生成](docs/e_commerce.md#生成html商品描述)：自动生成商品描述HTML，自动检测并修复非法标签，支持中文过滤；
+  - [选项翻译](docs/e_commerce.md#翻译商品选项)：支持商品选项多语言翻译，自动验证返回列表长度一致性；
 - 📝 **流式输出**: 支持流式响应，自动转静态处理；
 - 💡 **状态保持**: 模型实例缓存，避免重复实例化，保持API密钥切换状态。
 - ⏱️ **性能监控**: 支持设置耗时警告阈值，监控模型响应性能，并输出响应报告；
@@ -35,6 +35,12 @@ pip install --upgrade llmakits
 ## 快速开始
 
 ### 1. 配置模型和API密钥
+
+配置文件支持三种数据结构：文件路径（`str`）、配置字典（`dict`）、pandas DataFrame（仅密钥配置和全局配置）。完整字段结构请参考 [docs/configs/](docs/configs/) 目录下的配置文档：
+
+- [模型配置 models_config](docs/configs/models_config.md)
+- [密钥配置 keys_config](docs/configs/keys_config.md)
+- [全局模型配置 global_model_config](docs/configs/global_model_config.md)
 
 **模型配置文件** (`config/models_config.yaml`):
 - 支持按业务场景分组配置
@@ -59,6 +65,8 @@ translate_box:
     model_name: "deepseek-ai/DeepSeek-V3"
 ```
 
+字段结构详情（支持 str/dict）请参考 [docs/configs/models_config.md](docs/configs/models_config.md)。
+
 **密钥配置文件** (`config/keys_config.yaml`):
 - 支持多密钥配置，自动负载均衡
 - 当密钥达到每日使用限制时，自动切换到下一个密钥
@@ -77,6 +85,8 @@ modelscope:
 
 ```
 
+字段结构详情（支持 str/dict/pandas DataFrame）请参考 [docs/configs/keys_config.md](docs/configs/keys_config.md)。
+
 #### 错误处理和故障转移
 
 1. **模型级别故障转移**: 当前模型失败时，自动切换到同组的下一个模型
@@ -93,7 +103,9 @@ modelscope:
 
 #### 全局模型配置
 
-详见 [doc/global_model_config.md](doc/global_model_config.md)。
+支持通过CSV/XLSX文件或pandas DataFrame配置模型的高级参数（流式输出、思考模式等）。
+
+详见 [docs/configs/global_model_config.md](docs/configs/global_model_config.md)。
 
 ### 2. 加载模型
 
@@ -101,7 +113,7 @@ modelscope:
 from llmakits import load_models
 
 # 方式1：传入配置文件路径（字符串）
-models = load_models('config/models_config.yaml', 'config/keys_config.yaml')
+models, keys = load_models('config/models_config.yaml', 'config/keys_config.yaml')
 
 # 方式2：直接传入配置字典
 models_config = {
@@ -115,14 +127,25 @@ model_keys = {
         "api_keys": ["your-api-key"]
     }
 }
-models = load_models(models_config, model_keys)
+models, keys = load_models(models_config, model_keys)
 
 # 方式3：使用全局配置（支持高级参数配置）
-models = load_models(
+models, keys = load_models(
     'config/models_config.yaml',
     'config/keys_config.yaml',
     global_config='config/global_model_config.csv'  # 可选：全局模型配置
 )
+
+# 方式4：传入pandas DataFrame（密钥配置和全局配置支持DataFrame）
+import pandas as pd
+
+keys_df = pd.DataFrame({
+    "platform": ["openai"],
+    "base_url": ["https://api.openai.com/v1"],
+    "api_keys": [["your-api-key-1", "your-api-key-2"]]  # 也支持分隔符字符串"key-1;key-2"；或改用api_key单列（每行一个密钥，同平台多行自动聚合）
+})
+global_config_df = pd.read_csv('config/global_model_config.csv')
+models, keys = load_models('config/models_config.yaml', keys_df, global_config=global_config_df)
 
 # 获取模型组
 my_models = models['my_models']
@@ -148,7 +171,7 @@ message_info = {
 }
 ```
 
-详细使用说明请参考 [doc/prompt_manager.md](doc/prompt_manager.md)。
+详细使用说明请参考 [docs/prompt_manager.md](docs/prompt_manager.md)。
 
 ### 4. 发送消息（多模型调度）
 
@@ -225,11 +248,11 @@ result, tokens = dispatcher.execute_task(message_info, my_models)
 
 #### 高级用法
 
-- [结果验证和格式化](doc/dispatcher_advanced.md#结果验证和格式化)
-- [获取详细执行结果](doc/dispatcher_advanced.md#获取详细执行结果)
-- [耗时警告监控](doc/dispatcher_advanced.md#耗时警告监控)
-- [指定起始模型索引](doc/dispatcher_advanced.md#指定起始模型索引)
-- [调试模式](doc/dispatcher_advanced.md#调试模式)
+- [结果验证和格式化](docs/dispatcher_advanced.md#结果验证和格式化)
+- [获取详细执行结果](docs/dispatcher_advanced.md#获取详细执行结果)
+- [耗时警告监控](docs/dispatcher_advanced.md#耗时警告监控)
+- [指定起始模型索引](docs/dispatcher_advanced.md#指定起始模型索引)
+- [调试模式](docs/dispatcher_advanced.md#调试模式)
 
 #### 增强版调度策略：dispatcher_with_repair
 
@@ -357,17 +380,17 @@ print(age)  # 输出: None
 
 ### 电商工具
 
-详见 [doc/e_commerce.md](doc/e_commerce.md)。
+详见 [docs/e_commerce.md](docs/e_commerce.md)。
 
 | 功能 | 说明 |
 | --- | --- |
-| [基础工具函数](doc/e_commerce.md#基础工具函数) | 中文字符检测、字符长度检测、HTML 验证 |
-| [优化商品标题](doc/e_commerce.md#优化商品标题) | 支持长度/单词数约束检查，不合格自动修改 |
-| [预测商品类目](doc/e_commerce.md#预测商品类目) | 直接预测，支持 JSON 修复 |
-| [梯度预测商品类目](doc/e_commerce.md#梯度预测商品类目逐级预测) | 逐级预测，支持 JSON 修复 |
-| [翻译商品选项](doc/e_commerce.md#翻译商品选项) | 多语言翻译，自动验证返回列表长度一致性 |
-| [生成 HTML 商品描述](doc/e_commerce.md#生成html商品描述) | 自动生成 HTML，自动检测并修复非法标签 |
-| [填充属性值](doc/e_commerce.md#填充属性值) | 从候选值中自动验证并填充商品属性 |
+| [基础工具函数](docs/e_commerce.md#基础工具函数) | 中文字符检测、字符长度检测、HTML 验证 |
+| [优化商品标题](docs/e_commerce.md#优化商品标题) | 支持长度/单词数约束检查，不合格自动修改 |
+| [预测商品类目](docs/e_commerce.md#预测商品类目) | 直接预测，支持 JSON 修复 |
+| [梯度预测商品类目](docs/e_commerce.md#梯度预测商品类目逐级预测) | 逐级预测，支持 JSON 修复 |
+| [翻译商品选项](docs/e_commerce.md#翻译商品选项) | 多语言翻译，自动验证返回列表长度一致性 |
+| [生成 HTML 商品描述](docs/e_commerce.md#生成html商品描述) | 自动生成 HTML，自动检测并修复非法标签 |
+| [填充属性值](docs/e_commerce.md#填充属性值) | 从候选值中自动验证并填充商品属性 |
 
 ## 许可证
 

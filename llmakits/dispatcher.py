@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
 from funcguard import print_line, time_monitor, setup_logger
 from filekits.base_io import save_json
 from .message import convert_to_json
-from .load_model import load_models
+from .load_model import load_models, ModelsConfigInput, KeysConfigInput, GlobalConfigInput
 from .utils.image_cache import ImageBase64Cache
 from .utils.retry_state import get_retry_state, get_retry_state_snapshot
 from .utils.normalize_error import ResponseError
@@ -34,9 +34,9 @@ class ModelDispatcher:
 
     def __init__(
         self,
-        models_config: Optional[Union[str, Dict[str, Any]]] = None,
-        model_keys: Optional[Union[str, Dict[str, Any]]] = None,
-        global_config: Optional[Union[str, Dict[str, Any]]] = None,
+        models_config: Optional[ModelsConfigInput] = None,
+        model_keys: Optional[KeysConfigInput] = None,
+        global_config: Optional[GlobalConfigInput] = None,
         debug: bool = False,
     ):
         self.model_switch_count = 0
