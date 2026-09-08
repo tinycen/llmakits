@@ -6,7 +6,7 @@
 import json
 import ast
 import re
-from typing import Any, Union, Tuple
+from typing import Any
 
 
 def remove_think_section(text: str) -> str:
@@ -124,7 +124,7 @@ def convert_to_json(text: str) -> Any:
     raise Exception("format_json_error,无法解析为json格式")
 
 
-def extract_field(message: Union[str, dict], *target_fields: str) -> Union[Any, Tuple[Any, ...]]:
+def extract_field(message: str | dict, *target_fields: str) -> Any:
     """
     将响应结果转为json，并获取其中的指定字段
 

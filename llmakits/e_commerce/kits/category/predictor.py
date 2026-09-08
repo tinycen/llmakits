@@ -2,7 +2,7 @@
 类目预测核心功能
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 from ....dispatcher import ModelDispatcher
 from ...validators.value_validator import validate_dict
 from .utils import (
@@ -105,9 +105,9 @@ def predict_cat_gradual(
     else:
         category_all = extr_cat_tree(cat_tree, level=target_depth)
 
-    return_message: Union[str, List[str], Dict[str, Any]] = ""
-    level_1_names: Optional[Union[List[str], str]] = None
-    level_2_names: Optional[Union[List[str], str]] = None
+    return_message: str | List[str] | Dict[str, Any] = ""
+    level_1_names: List[str] | str | None = None
+    level_2_names: List[str] | str | None = None
 
     title = product.get("title", "")
     image_url = product.get("image_url", "")

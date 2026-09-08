@@ -13,7 +13,7 @@ JSON 错误 → 继续下一个模型
 """
 
 from .dispatcher import ModelDispatcher
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Callable
 from .utils.debug_utils import trigger_breakpoint
 from funcguard import print_line, print_block
 from .utils.normalize_error import ResponseError
@@ -81,7 +81,7 @@ def dispatcher_with_repair(
     dispatcher: ModelDispatcher,
     message_info: Dict[str, Any],
     group_name: str,
-    validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
+    validate_func: Callable[[str], tuple[bool, Any]] | None = None,
     fix_json_config: Dict[str, Any] = {},
 ) -> tuple[Any, int]:
     """

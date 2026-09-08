@@ -2,7 +2,7 @@
 类目处理工具函数
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from ....dispatcher import ModelDispatcher
 from ....dispatcher_control import dispatcher_with_repair
 
@@ -138,7 +138,7 @@ def execute_prediction(
     dispatcher: ModelDispatcher,
     message_info: Dict[str, Any],
     group_name: str,
-    validate_func: Optional[Any] = None,
+    validate_func: Any | None = None,
     fix_json_config: dict = {},
 ) -> List[Dict[str, Any]]:
     """执行预测并返回结果"""

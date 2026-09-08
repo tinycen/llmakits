@@ -1,6 +1,6 @@
 import httpx
 import pandas as pd
-from typing import Optional, Union, Any, Tuple
+from typing import Any, Tuple
 from .utils.debug_utils import trigger_breakpoint
 from openai import OpenAI
 from zai import ZhipuAiClient
@@ -28,7 +28,7 @@ class BaseClient:
         self.top_p = 0.1
         self.stream = False  # 是否流式输出，默认为 False，可选为 True
         self.stream_real = False  # 是否真的流式输出
-        self.client: Optional[Union[OpenAI, ZhipuAiClient]] = None  # 由子类初始化
+        self.client: OpenAI | ZhipuAiClient | None = None  # 由子类初始化
         self.extra_body = {}  # 额外的参数
         self.debug = False
 

@@ -2,13 +2,13 @@ import re
 import pandas as pd
 from filekits.base_io import load_yaml
 from fnmatch import fnmatch
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Tuple
 from .llm_client import BaseOpenai
 
 # 配置参数支持的输入类型别名
-ModelsConfigInput = Union[str, Dict[str, Any]]  # 模型配置：YAML文件路径或配置字典
-KeysConfigInput = Union[str, Dict[str, Any], pd.DataFrame]  # 密钥配置：YAML文件路径、配置字典或DataFrame
-GlobalConfigInput = Union[str, pd.DataFrame]  # 全局配置：CSV/XLSX文件路径或DataFrame
+ModelsConfigInput = str | Dict[str, Any]  # 模型配置：YAML文件路径或配置字典
+KeysConfigInput = str | Dict[str, Any] | pd.DataFrame  # 密钥配置：YAML文件路径、配置字典或DataFrame
+GlobalConfigInput = str | pd.DataFrame  # 全局配置：CSV/XLSX文件路径或DataFrame
 
 
 def load_global_config(global_config: GlobalConfigInput) -> pd.DataFrame:
@@ -105,7 +105,7 @@ def convert_keys_df_to_dict(model_keys: pd.DataFrame) -> Dict[str, Dict[str, Any
     return keys_dict
 
 
-def find_model_config(global_config: pd.DataFrame, platform: str, model_name: str) -> Optional[Dict[str, Any]]:
+def find_model_config(global_config: pd.DataFrame, platform: str, model_name: str) -> Dict[str, Any] | None:
     """
     根据平台和模型名称查找配置，支持通配符匹配
 
@@ -257,7 +257,7 @@ def parse_model_config(config_dict: Dict[str, Any]) -> Dict[str, Any]:
 def load_models(
     models_config: ModelsConfigInput,
     model_keys: KeysConfigInput,
-    global_config: Optional[GlobalConfigInput] = None,
+    global_config: GlobalConfigInput | None = None,
 ) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any]]:
     """
     从YAML配置文件加载LLM模型配置并实例化模型

@@ -3,7 +3,7 @@
 负责根据不同提供商的要求构建消息格式
 """
 
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple
 from urllib.parse import urlparse
 from filekits.base_io import download_encode_base64
 from .validator import validate_base64_content, detect_base64_image_mime_type
@@ -15,7 +15,7 @@ def prepare_messages(
         system_prompt: str,
         user_text: str,
         include_img: bool = False,
-        img_list: Optional[ List[ str ] ] = None,
+        img_list: List[ str ] | None = None,
 ) -> List[ Dict[ str, Any ] ] :
     """
     根据提供商名称准备消息格式
@@ -467,7 +467,7 @@ def convert_images_to_base64( img_list: List[ str ], image_cache = None ) -> Lis
     return processed_img_list
 
 
-def prepare_request_data( platform: str, messages: Any, message_info: Optional[ Dict ] ) -> Tuple[ Any, Dict ] :
+def prepare_request_data( platform: str, messages: Any, message_info: Dict | None ) -> Tuple[ Any, Dict ] :
     """准备请求数据
 
     Args:

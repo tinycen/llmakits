@@ -4,7 +4,7 @@
 """
 
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 class ImageBase64Cache:
@@ -25,7 +25,7 @@ class ImageBase64Cache:
         self.failed_cache = OrderedDict()
         self.group_cache = OrderedDict()
 
-    def get(self, url: str) -> Optional[str]:
+    def get(self, url: str) -> str | None:
         """
         从缓存中获取base64字符串
 
@@ -115,7 +115,7 @@ class ImageBase64Cache:
         """生成图片组稳定key。"""
         return tuple(img.strip() if isinstance(img, str) else str(img) for img in img_list)
 
-    def get_group_result(self, img_list: List[str]) -> Optional[Dict[str, Any]]:
+    def get_group_result(self, img_list: List[str]) -> Dict[str, Any] | None:
         """获取图片组处理结果。"""
         key = self._make_group_key(img_list)
         if key not in self.group_cache:

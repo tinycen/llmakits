@@ -1,9 +1,8 @@
 import os
 import sys
-from typing import Optional
 
 
-def trigger_breakpoint(exception: Optional[BaseException] = None) -> None:
+def trigger_breakpoint(exception: BaseException | None = None) -> None:
     """
     触发断点。
     1. 如果设置了环境变量 LLMAKITS_BREAKPOINT (1, true, yes, y, on)，则强制触发。

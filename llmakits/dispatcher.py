@@ -3,7 +3,7 @@
 """
 
 from .utils.debug_utils import trigger_breakpoint
-from typing import List, Dict, Any, Optional, Callable, Union, NamedTuple
+from typing import List, Dict, Any, Callable, NamedTuple
 from funcguard import print_line, time_monitor, setup_logger
 from filekits.base_io import save_json
 from .message import convert_to_json
@@ -21,7 +21,7 @@ class ExecutionResult(NamedTuple):
     total_tokens: int = 0  # 使用的token总数
     last_tried_index: int = -1  # 最后尝试的模型索引
     success: bool = False  # 是否成功
-    error: Optional[Exception] = None  # 错误信息（失败时保留）
+    error: Exception | None = None  # 错误信息（失败时保留）
 
 
 class ModelDispatcher:
@@ -34,9 +34,9 @@ class ModelDispatcher:
 
     def __init__(
         self,
-        models_config: Optional[ModelsConfigInput] = None,
-        model_keys: Optional[KeysConfigInput] = None,
-        global_config: Optional[GlobalConfigInput] = None,
+        models_config: ModelsConfigInput | None = None,
+        model_keys: KeysConfigInput | None = None,
+        global_config: GlobalConfigInput | None = None,
         debug: bool = False,
     ):
         self.model_switch_count = 0
@@ -174,10 +174,10 @@ class ModelDispatcher:
         message_info: Dict[str, Any],
         llm_models: List[Dict[str, Any]],
         format_json: bool = False,
-        validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
+        validate_func: Callable[[str], tuple[bool, Any]] | None = None,
         start_index: int = 0,  # 新增：起始索引
         return_detailed: bool = False,  # 是否返回详细结果
-    ) -> Union[tuple[Any, int], ExecutionResult]:
+    ) -> tuple[Any, int] | ExecutionResult:
         """
         执行任务 - 多模型调度器支持故障转移和重试
 
@@ -386,10 +386,10 @@ class ModelDispatcher:
         message_info: Dict[str, Any],
         group_name: str,
         format_json: bool = False,
-        validate_func: Optional[Callable[[str], tuple[bool, Any]]] = None,
+        validate_func: Callable[[str], tuple[bool, Any]] | None = None,
         start_index: int = 0,
         return_detailed: bool = False,  # 是否返回详细结果
-    ) -> Union[tuple[Any, int], ExecutionResult]:
+    ) -> tuple[Any, int] | ExecutionResult:
         """
         使用内部model_groups执行任务
 

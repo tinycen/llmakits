@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 
 def validate_dict(choices: List[Dict[str, Any]], search_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -59,7 +59,7 @@ def validate_string(choices: List[str], search_value: str):
     return None
 
 
-def auto_validate(choices: List[Any], search_data: Any) -> Union[Dict[str, Any], str, None]:
+def auto_validate(choices: List[Any], search_data: Any) -> Dict[str, Any] | str | None:
     """
     根据choices的第一个元素类型自动选择验证程序
 
