@@ -47,7 +47,8 @@ class ModelDispatcher:
         self.logger = setup_logger("dispatcher")  # 新增：日志记录器
         self.debug = debug
 
-        if models_config and model_keys:
+        # 注意：不能用 and 真值判断，DataFrame 不支持布尔求值；用 is not None + len() 判断
+        if models_config is not None and len(models_config) > 0 and model_keys is not None and len(model_keys) > 0:
             self.model_groups, self.model_keys = load_models(models_config, model_keys, global_config)
             self.model_group_names = list(self.model_groups.keys())  # 新增：模型组名称列表
         else:
