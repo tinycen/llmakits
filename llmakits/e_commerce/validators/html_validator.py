@@ -11,17 +11,17 @@ def check_allowed_tags(html_string: str, allowed_tags: set[str]):
         allowed_tags: 允许使用的标签集合
 
     Returns:
-        set: 未被允许的标签名集合
+        dict: 未被允许的标签字典 {标签名: [完整HTML片段, ...]}
     """
     # 查找所有HTML标签 (包括开始标签、结束标签和自闭合标签)
     # 这个正则表达式会匹配 <tag ...> 或 </tag> 或 <tag ... />
-    found_tags = re.findall(r'<\s*/?([a-zA-Z]+)[^>]*>', html_string)
+    # 使用 finditer 以便同时获取完整的匹配片段（用于排查）
+    unallowed_tags = {}  # {标签名: [完整片段, ...]}
 
-    # 将找到的标签名转换为小写集合以便比较
-    found_tag_names = {tag.lower() for tag in found_tags}
-
-    # 检查所有找到的标签是否都在允许的列表中
-    unallowed_tags = found_tag_names - allowed_tags
+    for match in re.finditer(r'<\s*/?([a-zA-Z]+)[^>]*>', html_string):
+        tag_name = match.group(1).lower()
+        if tag_name not in allowed_tags:
+            unallowed_tags.setdefault(tag_name, []).append(match.group(0))
 
     return unallowed_tags
 
@@ -102,7 +102,17 @@ def validate_html(html_string: str, allowed_tags: set[str]):
     if allowed_tags:
         unallowed_tags = check_allowed_tags(html_string, allowed_tags)
         if unallowed_tags:
-            error_messages.append(f"发现未被允许的标签: {', '.join(sorted(unallowed_tags))}")
+            # 构建带原始片段的错误信息，方便排查是否为误报
+            tag_details = []
+            for tag_name, fragments in unallowed_tags.items():
+                # 去重并限制显示数量，避免过长
+                unique_fragments = list(dict.fromkeys(fragments))
+                shown = ', '.join(repr(f) for f in unique_fragments[:3])
+                if len(unique_fragments) > 3:
+                    shown += f", ...等共{len(unique_fragments)}处"
+                tag_details.append(f"{tag_name}({shown})")
+            detail = '; '.join(sorted(tag_details))
+            error_messages.append(f"发现未被允许的标签: {detail}")
 
     # 检查标签闭合情况
     unclosed_tags = check_tag_closing(html_string)
