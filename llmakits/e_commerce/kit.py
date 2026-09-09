@@ -1,5 +1,4 @@
 from typing import List
-from .validators.string_validator import contains_chinese
 from ..message import extract_field
 from llmakits.dispatcher import ModelDispatcher
 
@@ -17,9 +16,6 @@ def translate_options(
     :param system_prompt: 系统提示语
     :return: 翻译后的选项列表
     """
-    # 首先检测源语言是否包含中文，如果不包含中文，就直接返回原语言
-    if not contains_chinese(str(options)):
-        return options
 
     user_text = f"title:{title},options:{options},请翻译为:{to_lang}语言"
 
